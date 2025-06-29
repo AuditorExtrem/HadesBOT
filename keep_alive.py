@@ -1,5 +1,6 @@
 from flask import Flask
 from threading import Thread
+import os  # ✅ IMPORTA AQUI FORA
 
 app = Flask('')
 
@@ -7,6 +8,10 @@ app = Flask('')
 def home():
     return "Bot está vivo!"
 
+def run():
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+
 def keep_alive():
-    t = Thread(target=lambda: app.run(host='0.0.0.0', port=5000))
+    t = Thread(target=run)
     t.start()
