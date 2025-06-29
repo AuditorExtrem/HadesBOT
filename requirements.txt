@@ -2,4 +2,3 @@ flask
 discord-py
 aiohttp
 pytz
-flask
