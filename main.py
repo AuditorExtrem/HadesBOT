@@ -532,7 +532,12 @@ async def cmd_enviar_aviso_2dias(ctx):
             await ctx.send("❌ Cargo não encontrado.")
     else:
         await ctx.send("❌ Canal não encontrado.")
+@bot.tree.command(name="staffping", description="Envia uma mensagem no canal atual")
+@app_commands.default_permissions(administrator=True)  # só admins; pode remover
+async def slash_staffping(interaction: discord.Interaction, mensagem: str):
+    await interaction.response.send_message(f"📣 {mensagem}")
 # keep_alive.py deve conter esse código:
+
 from keep_alive import keep_alive
 
 # Inicia o servidor Flask para manter o bot online com o UptimeRobot
