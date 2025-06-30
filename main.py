@@ -82,25 +82,11 @@ async def on_ready():
 
     try:
         synced = await bot.tree.sync()
-        print(f"🔄 Sincronizados {len(synced)} slash commands")
+        print(f"🔄 Sincronizados {len(synced)} comandos slash")
     except Exception as e:
         print(f"❌ Erro ao sincronizar slash commands: {e}")
 
-    agora = get_hora_brasilia()
-    ultimo_aviso = get_data_ultimo_envio("ultimo_aviso_diario")
-
-    # Só envia se ainda não foi enviado hoje
-    if not ultimo_aviso or agora.date() != ultimo_aviso.date():
-        if agora.hour == 12:
-            print("📢 Enviando aviso diário no on_ready() (12h)")
-            await enviar_mensagem()
-            set_data_ultimo_envio("ultimo_aviso_diario")
-        else:
-            print(f"⏳ São {agora.strftime('%H:%M')} - aguardando horário de envio")
-    else:
-        print("✅ Aviso diário já foi enviado hoje")
-
-    # Inicia os loops (que também usam envios.json para não repetir)
+    # Inicia os loops (não envia nada imediatamente)
     enviar_aviso_diario.start()
     aviso_cada_2_dias.start()
 
@@ -476,7 +462,12 @@ async def enviar_mensagem():
 @tasks.loop(minutes=1)
 async def enviar_aviso_diario():
     agora = get_hora_brasilia()
-    if agora.hour == 12 and agora.minute == 0:
+    if agora.hour == 15 and agora.minute == 0:
+        ultimo = get_data_ultimo_envio("ultimo_aviso_diario")
+        if not ultimo or (agora.date() > ultimo.date()):
+            print(f"📢 Enviando aviso diário às {agora.strftime('%H:%M')} (Horário de Brasília)")
+            await enviar_mensagem()
+            set_data_ultimo_envio("ultimo_aviso_diario")
         ultimo = get_data_ultimo_envio("ultimo_aviso_diario")
         if not ultimo or (agora.date() > ultimo.date()):
             print(f"📢 Enviando aviso diário às {agora.strftime('%H:%M')} (Horário de Brasília)")
@@ -495,7 +486,20 @@ async def keep_alive():
 @tasks.loop(minutes=1)
 async def aviso_cada_2_dias():
     agora = get_hora_brasilia()
-    if agora.hour == 12 and agora.minute == 0:
+    if agora.hour == 15 and agora.minute == 0:
+        ultimo = get_data_ultimo_envio("ultimo_aviso_2dias")
+        if not ultimo or (agora - ultimo).total_seconds() >= 172800:  # 2 dias
+            print(f"📢 Enviando aviso de 2 dias às {agora.strftime('%H:%M')} (Horário de Brasília)")
+            canal = bot.get_channel(CANAL_2DIAS_ID)
+            if canal:
+                cargo = canal.guild.get_role(CARGO_2DIAS_ID)
+                if cargo:
+                    await canal.send(f"# 📝 Mande sua meta diária e ajude a guilda a evoluir!\n{cargo.mention}")
+                    set_data_ultimo_envio("ultimo_aviso_2dias")
+                else:
+                    print("[ERRO] Cargo @HADES não encontrado.")
+            else:
+                print("[ERRO] Canal não encontrado.")
         ultimo = get_data_ultimo_envio("ultimo_aviso_2dias")
         if not ultimo or (agora - ultimo).total_seconds() >= 172800:  # 48 horas = 2 dias
             print(f"📢 Enviando aviso de 2 dias às {agora.strftime('%H:%M')} (Horário de Brasília)")
