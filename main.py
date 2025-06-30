@@ -79,29 +79,30 @@ def get_hora_brasilia():
 @bot.event
 async def on_ready():
     print(f'✅ {bot.user} está online!')
-    
-    # Sincronizar slash commands
+
     try:
         synced = await bot.tree.sync()
         print(f"🔄 Sincronizados {len(synced)} slash commands")
     except Exception as e:
         print(f"❌ Erro ao sincronizar slash commands: {e}")
-    
-    # Verificar se deve enviar mensagem imediata (apenas no primeiro startup)
-    ultimo_aviso = get_data_ultimo_envio("ultimo_aviso_diario")
+
     agora = get_hora_brasilia()
-    
-    # Só envia se nunca enviou antes OU se passou mais de 23 horas do último envio
-    if not ultimo_aviso or (agora - ultimo_aviso).total_seconds() > 82800:  # 23 horas
-        print("📢 Enviando mensagem de análise (primeira vez ou após muito tempo)...")
-        await enviar_mensagem()
-        set_data_ultimo_envio("ultimo_aviso_diario")
+    ultimo_aviso = get_data_ultimo_envio("ultimo_aviso_diario")
+
+    # Só envia se ainda não foi enviado hoje
+    if not ultimo_aviso or agora.date() != ultimo_aviso.date():
+        if agora.hour == 12:
+            print("📢 Enviando aviso diário no on_ready() (12h)")
+            await enviar_mensagem()
+            set_data_ultimo_envio("ultimo_aviso_diario")
+        else:
+            print(f"⏳ São {agora.strftime('%H:%M')} - aguardando horário de envio")
     else:
-        print("⏳ Mensagem não enviada - já foi enviada hoje")
-    
-    # Iniciar os loops de tarefas
+        print("✅ Aviso diário já foi enviado hoje")
+
+    # Inicia os loops (que também usam envios.json para não repetir)
     enviar_aviso_diario.start()
-    aviso_cada_2_dias.start()  
+    aviso_cada_2_dias.start()
 
 # --- Comandos para servidores ---
 
