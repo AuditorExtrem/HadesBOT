@@ -539,4 +539,4 @@ from keep_alive import keep_alive
 keep_alive()
 
 # Inicia o bot do Discord
-bot.run(TOKEN)
+bot.run(DISCORD_TOKEN)
