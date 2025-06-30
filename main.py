@@ -523,7 +523,7 @@ async def cmd_enviar_aviso_2dias(ctx):
 @bot.tree.command(name="staffping", description="Envia uma mensagem no canal sem revelar quem enviou")
 @app_commands.default_permissions(administrator=True)
 async def slash_staffping(interaction: discord.Interaction, mensagem: str):
-    await interaction.channel.send(f"📣 {mensagem}")  # mensagem pública
+    await interaction.channel.send(f" {mensagem}")  # mensagem pública
     await interaction.response.send_message("✅ Mensagem enviada com sucesso!", ephemeral=True)  # resposta privada
 # keep_alive.py deve conter esse código:
 
