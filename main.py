@@ -8,7 +8,7 @@ import pytz
 from keep_alive import keep_alive
 
 # Configurações
-TOKEN = os.getenv('DISCORD_BOT_TOKEN')
+TOKEN = os.getenv('DISCORD_TOKEN')
 ARQUIVO = 'servidores.json'
 ARQUIVO_ENVIOS = 'envios.json'
 
@@ -539,4 +539,4 @@ from keep_alive import keep_alive
 keep_alive()
 
 # Inicia o bot do Discord
-bot.run(DISCORD_TOKEN)
+bot.run(TOKEN)
