@@ -242,7 +242,7 @@ async def enviar_mensagem():
                 embed = discord.Embed(
                     title=dados.get("titulo", "⏳ Guild Donation Coming Up"),
                     description=dados.get("descricao", "Prepare your donations in advance!"),
-                    color=discord.Color.orange()
+                    color=discord.Color.blue()
                 )
                 if dados.get("imagem"):
                     embed.set_image(url=dados["imagem"])
