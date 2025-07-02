@@ -11,7 +11,7 @@ from keep_alive import keep_alive
 TOKEN = os.getenv('DISCORD_TOKEN')
 ARQUIVO = 'servidores.json'
 ARQUIVO_ENVIOS = 'envios.json'
-
+AVISOS_CONFIG = 'avisos_config.json'  # novo arquivo JSON para os textos/imagem dos embeds
 # IDs fornecidos
 CANAL_AVISOS_ID = 1380022433288949851
 CARGO_ANALISE_ID = 1379508463172063286
@@ -489,7 +489,15 @@ async def aviso_cada_2_dias():
             if canal:
                 cargo = canal.guild.get_role(CARGO_2DIAS_ID)
                 if cargo:
-                    await canal.send(f"# 📝 Mande sua meta diária e ajude a guilda a evoluir!\n{cargo.mention}")
+                    dados = carregar_aviso("2dias")
+embed = discord.Embed(
+    title=dados.get("titulo", "⏳ Guild Donation Coming Up"),
+    description=dados.get("descricao", "Prepare your donations in advance!"),
+    color=discord.Color.orange()
+)
+if dados.get("imagem"):
+    embed.set_image(url=dados["imagem"])
+await canal.send(content=cargo.mention, embed=embed)
                     set_data_ultimo_envio("ultimo_aviso_2dias")
                 else:
                     print("[ERRO] Cargo @HADES não encontrado.")
@@ -525,6 +533,53 @@ async def cmd_enviar_aviso_2dias(ctx):
 async def slash_staffping(interaction: discord.Interaction, mensagem: str):
     await interaction.channel.send(f" {mensagem}")  # mensagem pública
     await interaction.response.send_message("✅ Mensagem enviada com sucesso!", ephemeral=True)  # resposta privada
+
+def carregar_aviso(tipo):
+    if not os.path.exists(AVISOS_CONFIG):
+        return {}
+    with open(AVISOS_CONFIG, 'r', encoding='utf-8') as f:
+        config = json.load(f)
+   return config.get(tipo, {})
+@bot.tree.command(name="editar_aviso_diario", description="Edite o aviso diário com título, descrição e imagem")
+@app_commands.default_permissions(administrator=True)
+async def editar_aviso_diario(interaction: discord.Interaction, titulo: str, descricao: str, imagem_url: str = None):
+    if not os.path.exists(AVISOS_CONFIG):
+        config = {}
+    else:
+        with open(AVISOS_CONFIG, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+
+    config["diario"] = {
+        "titulo": titulo,
+        "descricao": descricao,
+        "imagem": imagem_url
+    }
+
+    with open(AVISOS_CONFIG, 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=4)
+
+    await interaction.response.send_message("✅ Aviso diário atualizado com sucesso!", ephemeral=True)
+
+
+@bot.tree.command(name="editar_aviso_2_dias", description="Edite o aviso de 2 dias com título, descrição e imagem")
+@app_commands.default_permissions(administrator=True)
+async def editar_aviso_2_dias(interaction: discord.Interaction, titulo: str, descricao: str, imagem_url: str = None):
+    if not os.path.exists(AVISOS_CONFIG):
+        config = {}
+    else:
+        with open(AVISOS_CONFIG, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+
+    config["2dias"] = {
+        "titulo": titulo,
+        "descricao": descricao,
+        "imagem": imagem_url
+    }
+
+    with open(AVISOS_CONFIG, 'w', encoding='utf-8') as f:
+        json.dump(config, f, indent=4)
+
+    await interaction.response.send_message("✅ Aviso de 2 dias atualizado com sucesso!", ephemeral=True)
 # keep_alive.py deve conter esse código:
 
 from keep_alive import keep_alive
