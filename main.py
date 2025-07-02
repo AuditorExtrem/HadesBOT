@@ -92,7 +92,7 @@ async def enviar_aviso(tipo, canal_id, cargo_id, texto_padrao):
         embed = discord.Embed(
             title=dados.get("titulo", "⏳ Guild Donation Coming Up"),
             description=dados.get("descricao", "Prepare your donations in advance!"),
-            color=discord.Color.orange()
+            color=discord.Color.Blue()
         )
         if dados.get("imagem"):
             embed.set_image(url=dados["imagem"])
