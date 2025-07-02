@@ -1,0 +1,12 @@
+{
+  "diario": {
+    "titulo": "📢 Daily Donation Reminder",
+    "descricao": "Don't forget to donate today!",
+    "imagem": null
+  },
+  "2dias": {
+    "titulo": "⏳ 2 Days Until Deadline",
+    "descricao": "Prepare your donations in advance!",
+    "imagem": null
+  }
+}
