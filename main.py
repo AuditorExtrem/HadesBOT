@@ -432,28 +432,26 @@ class RefazerFichaView(ui.View):
         self.add_item(self.nao_button)
 
     async def refazer(self, interaction: discord.Interaction):
-    try:
-        await interaction.response.edit_message(content=TEXTOS[self.idioma]['refazendo'], view=None)
-    except discord.NotFound:
-        await interaction.followup.send("⚠️ Interação expirada ou já respondida.", ephemeral=True)
-        return
+        try:
+            await interaction.response.edit_message(content=TEXTOS[self.idioma]['refazendo'], view=None)
+        except discord.NotFound:
+            await interaction.followup.send("⚠️ Interação expirada ou já respondida.", ephemeral=True)
+            return
 
-    await self.bot_refazer(self.canal, self.user, self.guilda, self.idioma)
+        await self.bot_refazer(self.canal, self.user, self.guilda, self.idioma)
 
-async def parar(self, interaction: discord.Interaction):
-    try:
-        await interaction.response.edit_message(content=TEXTOS[self.idioma]['cancelada'], view=None)
-    except discord.NotFound:
-        await interaction.followup.send("⚠️ Interação expirada ou já respondida.", ephemeral=True)
-    await interaction.response.edit_message(content=TEXTOS[self.idioma]['cancelada'], view=None)
-except discord.NotFound:
-    await interaction.followup.send("⚠️ Interação expirada ou já respondida.", ephemeral=True)
+    async def parar(self, interaction: discord.Interaction):
+        try:
+            await interaction.response.edit_message(content=TEXTOS[self.idioma]['cancelada'], view=None)
+        except discord.NotFound:
+            await interaction.followup.send("⚠️ Interação expirada ou já respondida.", ephemeral=True)
+
 
 async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_destino, canal, bot_refazer):
     bandeira = IDIOMAS.get(idioma, {}).get("bandeira", "")
     embed = discord.Embed(
-    title=f"{TEXTOS[idioma]['titulo_embed']} {bandeira}",
-    color=discord.Color.blurple()
+        title=f"{TEXTOS[idioma]['titulo_embed']} {bandeira}",
+        color=discord.Color.blurple()
     )
     embed.add_field(name="🎮 Roblox", value=ficha_data['roblox'], inline=False)
     embed.add_field(name="⚔️ DPS", value=ficha_data['dps'], inline=True)
@@ -462,17 +460,17 @@ async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_d
     embed.add_field(name="🔹 Level", value=ficha_data['level'], inline=True)
     embed.add_field(name="🔹 Tempo", value=ficha_data['tempo'], inline=True)
     embed.set_footer(text=f"Data: {ficha_data['data']} | Guilda: {guilda} | Idioma: {idioma}")
+
     view = ConfirmarFichaView(
         ficha_data, canal_destino, user, guilda, idioma, canal, bot_refazer
     )
+    
     await interaction.followup.send(
         content=TEXTOS[idioma]['confirmar_envio'],
         embed=embed,
         view=view,
         ephemeral=True
     )
-
-async def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, target_user):
     # Defer para garantir que a interação foi respondida e poder usar followup
     if not interaction.response.is_done():
         await interaction.response.defer(ephemeral=True)
