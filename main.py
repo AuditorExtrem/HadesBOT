@@ -23,8 +23,8 @@ intents.members = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 # Canais das fichas
-FICHAS_CANAL_ID = 1390156313589448825        # Canal de Hades
-FICHAS_CANAL_HADES2_ID = 1390146714417102938 # Troque pelo ID do canal Hades2
+FICHAS_CANAL_ID = 1386798237163323493        # Canal de Hades
+FICHAS_CANAL_HADES2_ID = 1388546663190364241 # Troque pelo ID do canal Hades2
 
 # Numeração separada
 NUMERO_FICHA_PADRAO = {
