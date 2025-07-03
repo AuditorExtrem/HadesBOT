@@ -312,7 +312,25 @@ async def slash_ficha(interaction: discord.Interaction, usuario: discord.Member 
             await interaction.response.send_message(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
         except Exception:
             await interaction.response.send_message(f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar DMs!", ephemeral=True)
-
+@bot.tree.command(name="edit_numero_ficha", description="Editar o número inicial das fichas de uma guilda (ADM)")
+@app_commands.describe(guilda="Guilda (hades ou hades2)", numero="Novo número inicial")
+@app_commands.choices(
+    guilda=[
+        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="Hades 2", value="hades2"),
+    ]
+)
+@app_commands.default_permissions(administrator=True)
+async def edit_numero_ficha(
+    interaction: discord.Interaction,
+    guilda: app_commands.Choice[str],
+    numero: int
+):
+    salvar_numero_ficha(guilda.value, numero)
+    await interaction.response.send_message(
+        f"✅ Número inicial das fichas da guilda **{guilda.name}** atualizado para {numero}.",
+        ephemeral=True
+)
 @bot.tree.command(name="ficha_hades2", description="Preencher ficha de jogador (Hades 2)")
 @app_commands.describe(usuario="(Opcional) Usuário para responder a ficha")
 async def slash_ficha_hades2(interaction: discord.Interaction, usuario: discord.Member = None):
