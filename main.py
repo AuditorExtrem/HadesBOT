@@ -351,7 +351,244 @@ async def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, targe
     canal_destino = FICHAS_CANAL_ID if nome_guilda == "hades" else FICHAS_CANAL_HADES2_ID
     await interaction.followup.send(TEXTOS[idioma]['preenchida'], ephemeral=True)
     await finalizar_ficha(interaction, target_user, ficha, nome_guilda, idioma, canal_destino, canal, refazer)
-    # ========= PARTE 2 =========
+  # ----------- SLASH COMMANDS DE FICHA -----------
+
+@bot.tree.command(name="ficha", description="Preencher ficha de jogador (Hades)")
+@app_commands.describe(usuario="(Opcional) Usuário para responder a ficha")
+async def slash_ficha(interaction: discord.Interaction, usuario: discord.Member = None):
+    canal_id = interaction.channel.id
+    canal_nome = interaction.channel.name
+    canal_mencao = interaction.channel.mention
+    if usuario is None or usuario == interaction.user:
+        view = MenuIdioma(bot, canal_id, "hades", interaction.user, canal_nome, canal_mencao)
+        await interaction.response.send_message(
+            f"📄 Clique abaixo para escolher o idioma.\n"
+            "Só quem for convidado poderá interagir.\n"
+            "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
+            f"Número inicial da ficha: **{carregar_numero_ficha('hades')}**",
+            view=view,
+            ephemeral=True
+        )
+    else:
+        view = MenuIdioma(bot, canal_id, "hades", usuario, canal_nome, canal_mencao)
+        try:
+            await usuario.send(
+                f"📄 Você foi convidado a preencher a ficha da guilda **Hades** por {interaction.user.mention}!\n"
+                "Selecione o idioma abaixo para começar.",
+                view=view
+            )
+            await interaction.response.send_message(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
+        except Exception:
+            await interaction.response.send_message(f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar DMs!", ephemeral=True)
+
+@bot.tree.command(name="ficha_hades2", description="Preencher ficha de jogador (Hades 2)")
+@app_commands.describe(usuario="(Opcional) Usuário para responder a ficha")
+async def slash_ficha_hades2(interaction: discord.Interaction, usuario: discord.Member = None):
+    canal_id = interaction.channel.id
+    canal_nome = interaction.channel.name
+    canal_mencao = interaction.channel.mention
+    if usuario is None or usuario == interaction.user:
+        view = MenuIdioma(bot, canal_id, "hades2", interaction.user, canal_nome, canal_mencao)
+        await interaction.response.send_message(
+            f"📄 Clique abaixo para escolher o idioma.\n"
+            "Só quem for convidado poderá interagir.\n"
+            "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
+            f"Número inicial da ficha: **{carregar_numero_ficha('hades2')}**",
+            view=view,
+            ephemeral=True
+        )
+    else:
+        view = MenuIdioma(bot, canal_id, "hades2", usuario, canal_nome, canal_mencao)
+        try:
+            await usuario.send(
+                f"📄 Você foi convidado a preencher a ficha da guilda **Hades 2** por {interaction.user.mention}!\n"
+                "Selecione o idioma abaixo para começar.",
+                view=view
+            )
+            await interaction.response.send_message(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
+        except Exception:
+            await interaction.response.send_message(f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar DMs!", ephemeral=True)
+
+@bot.tree.command(name="ver_ficha", description="Ver ficha de jogador")
+@app_commands.describe(numero="Número da ficha", guilda="Guilda", idioma="Idioma")
+@app_commands.choices(
+    guilda=[
+        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="Hades 2", value="hades2"),
+    ],
+    idioma=[
+        app_commands.Choice(name="Português", value="pt"),
+        app_commands.Choice(name="Inglês", value="en"),
+        app_commands.Choice(name="Espanhol", value="es"),
+    ]
+)
+async def ver_ficha(
+    interaction: discord.Interaction,
+    numero: int,
+    guilda: app_commands.Choice[str],
+    idioma: app_commands.Choice[str]
+):
+    uid, ficha = carregar_ficha_por_numero(numero, guilda.value, idioma.value)
+    if not ficha:
+        await interaction.response.send_message("❌ Ficha não encontrada.", ephemeral=True)
+        return
+    discord_id = ficha.get("discord", None)
+    member = None
+    if discord_id and str(discord_id).isdigit() and interaction.guild:
+        member = interaction.guild.get_member(int(discord_id))
+    bandeira = IDIOMAS.get(ficha.get("idioma"), {}).get("bandeira", "")
+    discord_str = member.mention if member else (f"<@{discord_id}>" if discord_id else "-")
+    embed = discord.Embed(
+        title=f"🌌 Ficha de Jogador #{ficha['numero']} – Arise Crossover {bandeira} 🌌",
+        color=discord.Color.purple()
+    )
+    embed.add_field(name="🎮 Roblox", value=ficha['roblox'], inline=False)
+    embed.add_field(name="🏰 Guilda", value=guilda.name, inline=True)
+    embed.add_field(name="💬 Discord", value=discord_str, inline=True)
+    embed.add_field(name="⚔️ DPS", value=ficha['dps'], inline=False)
+    embed.add_field(name="💎 Farm", value=ficha['farm'], inline=False)
+    embed.add_field(
+        name="📊 Outras Informações",
+        value=f"🔹 Rank: {ficha['rank']}\n🔹 Level: {ficha['level']}\n🔹 Tempo: {ficha['tempo']}",
+        inline=False
+    )
+    embed.set_footer(text=f"📆 Data da ficha: {ficha['data']}")
+    if member:
+        embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+@bot.tree.command(name="editar_ficha", description="Editar uma informação específica da ficha (ADM)")
+@app_commands.describe(
+    numero="Número da ficha",
+    guilda="Selecione a guilda (hades ou hades2)",
+    idioma="Selecione o idioma (pt, en, es)",
+    campo="Campo a editar",
+    valor="Novo valor (se campo for Discord, marque o usuário)"
+)
+@app_commands.choices(
+    guilda=[
+        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="Hades 2", value="hades2"),
+    ],
+    idioma=[
+        app_commands.Choice(name="Português", value="pt"),
+        app_commands.Choice(name="Inglês", value="en"),
+        app_commands.Choice(name="Espanhol", value="es"),
+    ],
+    campo=[
+        app_commands.Choice(name=label, value=campo) for campo, label in CAMPOS_EDITAVEIS
+    ]
+)
+@app_commands.default_permissions(administrator=True)
+async def editar_ficha(
+    interaction: discord.Interaction,
+    numero: int,
+    guilda: app_commands.Choice[str],
+    idioma: app_commands.Choice[str],
+    campo: app_commands.Choice[str],
+    valor: str
+):
+    uid, ficha = carregar_ficha_por_numero(numero, guilda.value, idioma.value)
+    if not ficha:
+        await interaction.response.send_message("❌ Ficha não encontrada.", ephemeral=True)
+        return
+    novo_valor = valor
+    if campo.value == "discord":
+        user_id = None
+        # Corrigido: aceita menção ou ID puro!
+        if valor.startswith("<@") and valor.endswith(">"):
+            user_id = valor.replace("<@", "").replace(">", "").replace("!", "")
+            novo_valor = user_id
+        elif valor.isdigit():
+            novo_valor = valor
+        else:
+            novo_valor = valor  # fallback
+    ficha[campo.value] = novo_valor
+    salvar_ficha_por_uid(uid, ficha, guilda.value, idioma.value)
+    # Mostra menção azul se possível
+    discord_str = f"<@{novo_valor}>" if campo.value == "discord" and novo_valor.isdigit() else novo_valor
+    await interaction.response.send_message(
+        f"✅ Ficha número {numero} da guilda {guilda.value} atualizada!\nCampo **{campo.value}** corrigido para: {discord_str}",
+        ephemeral=True
+    )
+
+@bot.tree.command(name="arquivar_ficha", description="Arquiva a ficha de um jogador e envia ao canal de arquivo (ADM)")
+@app_commands.choices(
+    guilda=[
+        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="Hades 2", value="hades2"),
+    ],
+    idioma=[
+        app_commands.Choice(name="Português", value="pt"),
+        app_commands.Choice(name="Inglês", value="en"),
+        app_commands.Choice(name="Espanhol", value="es"),
+    ]
+)
+@app_commands.describe(
+    numero="Número da ficha",
+    guilda="Selecione a guilda (hades ou hades2)",
+    idioma="Selecione o idioma (pt, en, es)"
+)
+@app_commands.default_permissions(administrator=True)
+async def arquivar_ficha(
+    interaction: discord.Interaction,
+    numero: int,
+    guilda: app_commands.Choice[str],
+    idioma: app_commands.Choice[str]
+):
+    uid, ficha = carregar_ficha_por_numero(numero, guilda.value, idioma.value)
+    if not ficha:
+        await interaction.response.send_message("❌ Ficha não encontrada.", ephemeral=True)
+        return
+    view = ArquivarFichaMotivoView(interaction, numero, guilda.name, idioma.name, uid, ficha)
+    await interaction.response.send_message("Escolha o motivo do arquivamento:", view=view, ephemeral=True)
+
+@bot.tree.command(name="minha_ficha", description="Veja rapidamente sua ficha cadastrada em uma guilda/idioma")
+@app_commands.choices(
+    guilda=[
+        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="Hades 2", value="hades2"),
+    ],
+    idioma=[
+        app_commands.Choice(name="Português", value="pt"),
+        app_commands.Choice(name="Inglês", value="en"),
+        app_commands.Choice(name="Espanhol", value="es"),
+    ]
+)
+async def minha_ficha(
+    interaction: discord.Interaction,
+    guilda: app_commands.Choice[str],
+    idioma: app_commands.Choice[str]
+):
+    ficha = carregar_ficha(interaction.user.id, guilda.value, idioma.value)
+    if not ficha:
+        await interaction.response.send_message("❌ Você não possui ficha cadastrada nessa guilda/idioma.", ephemeral=True)
+        return
+    discord_id = ficha.get("discord", interaction.user.id)
+    member = None
+    if discord_id and str(discord_id).isdigit() and interaction.guild:
+        member = interaction.guild.get_member(int(discord_id))
+    discord_str = member.mention if member else f"<@{discord_id}>" if discord_id else "-"
+    bandeira = IDIOMAS.get(ficha.get("idioma"), {}).get("bandeira", "")
+    embed = discord.Embed(
+        title=f"🌌 Ficha de Jogador #{ficha['numero']} – Arise Crossover {bandeira} 🌌",
+        color=discord.Color.purple()
+    )
+    embed.add_field(name="🎮 Roblox", value=ficha['roblox'], inline=False)
+    embed.add_field(name="🏰 Guilda", value=guilda.name, inline=True)
+    embed.add_field(name="💬 Discord", value=discord_str, inline=True)
+    embed.add_field(name="⚔️ DPS", value=ficha['dps'], inline=False)
+    embed.add_field(name="💎 Farm", value=ficha['farm'], inline=False)
+    embed.add_field(
+        name="📊 Outras Informações",
+        value=f"🔹 Rank: {ficha['rank']}\n🔹 Level: {ficha['level']}\n🔹 Tempo: {ficha['tempo']}",
+        inline=False
+    )
+    embed.set_footer(text=f"📆 Data da ficha: {ficha['data']}")
+    if member:
+        embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
+    await interaction.response.send_message(embed=embed, ephemeral=True) 
+# ========= PARTE 2 =========
 
 ARQUIVO = 'servidores.json'
 ARQUIVO_ENVIOS = 'envios.json'
