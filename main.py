@@ -170,7 +170,7 @@ async def fazer_perguntas(interaction, canal, idioma, perguntas, target_user):
         def check(m):
             return m.author == target_user and m.channel == canal
         try:
-            msg = await interaction.client.wait_for("message", check=check, timeout=180)
+            msg = await interaction.client.wait_for("message", check=check, timeout=600)
             respostas[chave] = msg.content.strip()
         except Exception:
             await canal.send(f"{target_user.mention} Tempo esgotado para responder a pergunta.")
