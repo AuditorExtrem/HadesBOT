@@ -61,7 +61,9 @@ CAMPOS_EDITAVEIS = [
     ("rank", "Rank"),
     ("level", "Level"),
     ("tempo", "Tempo"),
-    ("data", "Data")
+    ("data", "Data"),
+    ("discord", "Discord"),
+]
 ]
 GUILDAS = [("hades", "Hades"), ("hades2", "Hades2")]
 
