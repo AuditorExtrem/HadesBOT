@@ -416,3 +416,274 @@ async def editar_ficha_slash(interaction: discord.Interaction):
     await interaction.response.send_message("Selecione as opções para editar uma ficha:", view=view, ephemeral=True)
 
 # --- PARTE 1 FIM ---
+# =======================
+# PARTE 2 - COMANDOS DO BOT HADES
+# =======================
+
+# =======================
+# COMANDOS DE GERENCIAMENTO PRINCIPAIS (FICHAS)
+# =======================
+
+# ----------- SELECT MENU EDITAR FICHA (agora incluindo 'discord') --------------
+CAMPOS_EDITAVEIS = [
+    ("roblox", "Nome Roblox"),
+    ("dps", "DPS"),
+    ("farm", "Farm"),
+    ("rank", "Rank"),
+    ("level", "Level"),
+    ("tempo", "Tempo"),
+    ("data", "Data"),
+    ("discord", "Discord"),
+]
+
+class EditarFichaView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=180)
+        self.guilda = None
+        self.idioma = None
+        self.campo = None
+
+        # Guilda Select
+        self.guilda_select = ui.Select(
+            placeholder="Selecione a guilda",
+            options=[discord.SelectOption(label=label, value=value) for value, label in GUILDAS]
+        )
+        self.guilda_select.callback = self.guilda_callback
+        self.add_item(self.guilda_select)
+
+        # Idioma Select
+        self.idioma_select = ui.Select(
+            placeholder="Selecione o idioma",
+            options=[
+                discord.SelectOption(label=IDIOMAS[key]["nome"], value=key, emoji=IDIOMAS[key]["bandeira"])
+                for key in IDIOMAS
+            ]
+        )
+        self.idioma_select.callback = self.idioma_callback
+        self.add_item(self.idioma_select)
+
+        # Campo Select
+        self.campo_select = ui.Select(
+            placeholder="Selecione o campo para editar",
+            options=[
+                discord.SelectOption(label=label, value=value)
+                for value, label in CAMPOS_EDITAVEIS
+            ]
+        )
+        self.campo_select.callback = self.campo_callback
+        self.add_item(self.campo_select)
+
+    async def guilda_callback(self, interaction: discord.Interaction):
+        self.guilda = self.guilda_select.values[0]
+        await interaction.response.send_message(f"Guilda selecionada: {self.guilda}", ephemeral=True)
+
+    async def idioma_callback(self, interaction: discord.Interaction):
+        self.idioma = self.idioma_select.values[0]
+        await interaction.response.send_message(f"Idioma selecionado: {self.idioma}", ephemeral=True)
+
+    async def campo_callback(self, interaction: discord.Interaction):
+        self.campo = self.campo_select.values[0]
+        await interaction.response.send_modal(EditarFichaModal(self))
+
+class EditarFichaModal(ui.Modal, title="Editar Ficha"):
+    numero = ui.TextInput(label="NÃºmero da Ficha", placeholder="Ex: 10", required=True)
+    valor = ui.TextInput(label="Novo Valor", placeholder="Digite o novo valor do campo", required=True)
+
+    def __init__(self, view):
+        super().__init__()
+        self.view = view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        if not all([self.view.guilda, self.view.idioma, self.view.campo]):
+            await interaction.response.send_message("Por favor, selecione guilda, idioma e campo antes.", ephemeral=True)
+            return
+
+        guilda = self.view.guilda
+        idioma = self.view.idioma
+        campo = self.view.campo
+        try:
+            numero = int(self.numero.value.strip())
+        except Exception:
+            await interaction.response.send_message("NÃºmero invÃ¡lido!", ephemeral=True)
+            return
+        valor = self.valor.value.strip()
+
+        uid, ficha = carregar_ficha_por_numero(numero, guilda, idioma)
+        if not ficha:
+            await interaction.response.send_message("âŒ Ficha nÃ£o encontrada na guilda/idioma selecionados.", ephemeral=True)
+            return
+        # Permitir editar o Discord (como texto ou menÃ§Ã£o)
+        if campo == "discord":
+            ficha["discord"] = valor
+        else:
+            ficha[campo] = valor
+        salvar_ficha_por_uid(uid, ficha, guilda, idioma)
+        await interaction.response.send_message(
+            f"âœ… Ficha nÃºmero {numero} da guilda {guilda} atualizada!\nCampo **{campo}** corrigido para: **{valor}**",
+            ephemeral=True
+        )
+
+@bot.tree.command(name="editar_ficha", description="Editar ficha de jogador por menus (ADM)")
+@app_commands.default_permissions(administrator=True)
+async def editar_ficha_slash(interaction: discord.Interaction):
+    view = EditarFichaView()
+    await interaction.response.send_message("Selecione as opÃ§Ãµes para editar uma ficha:", view=view, ephemeral=True)
+
+# =======================
+# COMANDOS EXTRAS E IMPORTANTE PARA O SERVIDOR
+# =======================
+# ----------- SERVIDORES --------------
+def carregar_servidores():
+    if not os.path.exists(ARQUIVO):
+        return []
+    with open(ARQUIVO, 'r') as f:
+        return json.load(f)
+def salvar_servidores(lista):
+    with open(ARQUIVO, 'w') as f:
+        json.dump(lista, f, indent=4)
+
+@bot.tree.command(name="adicionar_servidor", description="Adiciona ou atualiza um servidor com nome, link e foto opcional")
+@app_commands.describe(nome="Nome do servidor", link="Link do servidor", membro="(Opcional) Membro para foto/autor")
+async def adicionar_servidor_slash(interaction: discord.Interaction, nome: str, link: str, membro: discord.Member = None):
+    servidores = carregar_servidores()
+    autor_id = membro.id if membro else None
+    for servidor in servidores:
+        if servidor['nome'].lower() == nome.lower():
+            servidor['link'] = link
+            servidor['autor_id'] = autor_id
+            salvar_servidores(servidores)
+            await interaction.response.send_message(f"ðŸ” Servidor **{nome}** atualizado!", ephemeral=True)
+            return
+    servidores.append({'nome': nome, 'link': link, 'autor_id': autor_id})
+    salvar_servidores(servidores)
+    await interaction.response.send_message(f"âœ… Servidor **{nome}** adicionado com sucesso!", ephemeral=True)
+
+@bot.tree.command(name="remover_servidor", description="Remove um servidor salvo pelo nome")
+@app_commands.describe(nome="Nome do servidor")
+async def remover_servidor_slash(interaction: discord.Interaction, nome: str):
+    servidores = carregar_servidores()
+    nome_lower = nome.lower()
+    novos = [s for s in servidores if s['nome'].lower() != nome_lower]
+    if len(novos) == len(servidores):
+        await interaction.response.send_message(f"âŒ Nenhum servidor chamado **{nome}** encontrado.", ephemeral=True)
+        return
+    salvar_servidores(novos)
+    await interaction.response.send_message(f"ðŸ—‘ï¸ Servidor **{nome}** removido com sucesso!", ephemeral=True)
+
+@bot.tree.command(name="atualizar_servidor", description="Atualiza a imagem do servidor com o avatar da pessoa mencionada")
+@app_commands.describe(nome="Nome do servidor", membro="Membro para atualizar foto")
+async def atualizar_servidor_slash(interaction: discord.Interaction, nome: str, membro: discord.Member):
+    servidores = carregar_servidores()
+    for servidor in servidores:
+        if servidor['nome'].lower() == nome.lower():
+            servidor['autor_id'] = membro.id
+            salvar_servidores(servidores)
+            await interaction.response.send_message(f"âœ… Foto do servidor **{nome}** atualizada para **{membro.display_name}**.", ephemeral=True)
+            return
+    await interaction.response.send_message(f"âŒ Servidor **{nome}** nÃ£o encontrado.", ephemeral=True)
+
+@bot.tree.command(name="servidores", description="Lista todos os servidores com botÃ£o de entrada")
+async def servidores_slash(interaction: discord.Interaction):
+    servidores = carregar_servidores()
+    if not servidores:
+        await interaction.response.send_message("âŒ Nenhum servidor foi adicionado ainda.", ephemeral=True)
+        return
+    for servidor in servidores:
+        embed = discord.Embed(
+            title=servidor["nome"],
+            description="Clique no botÃ£o abaixo para entrar no servidor do Roblox.",
+            color=discord.Color.green()
+        )
+        autor_id = servidor.get("autor_id")
+        if autor_id:
+            membro = interaction.guild.get_member(autor_id)
+            if membro:
+                embed.set_author(name=membro.display_name, icon_url=membro.avatar.url if membro.avatar else None)
+        view = discord.ui.View()
+        view.add_item(discord.ui.Button(label="ðŸŽ® Jogar agora", url=servidor["link"]))
+        await interaction.channel.send(embed=embed, view=view)
+    await interaction.response.send_message("Lista de servidores enviada!", ephemeral=True)
+
+@bot.tree.command(name="servidor", description="Mostra somente o servidor especificado")
+@app_commands.describe(nome="Nome do servidor")
+async def servidor_slash(interaction: discord.Interaction, nome: str):
+    servidores = carregar_servidores()
+    nome_lower = nome.lower()
+    for servidor in servidores:
+        if servidor["nome"].lower() == nome_lower:
+            embed = discord.Embed(
+                title=servidor["nome"],
+                description="Clique no botÃ£o abaixo para entrar no servidor do Roblox.",
+                color=discord.Color.green()
+            )
+            autor_id = servidor.get("autor_id")
+            if autor_id:
+                membro = interaction.guild.get_member(autor_id)
+                if membro:
+                    embed.set_author(name=membro.display_name, icon_url=membro.avatar.url if membro.avatar else None)
+            view = discord.ui.View()
+            view.add_item(discord.ui.Button(label="ðŸŽ® Jogar agora", url=servidor["link"]))
+            await interaction.channel.send(embed=embed, view=view)
+            await interaction.response.send_message(f"Servidor **{nome}** encontrado!", ephemeral=True)
+            return
+    await interaction.response.send_message(f"âŒ Servidor **{nome}** nÃ£o foi encontrado.", ephemeral=True)
+
+# ----------- AVISOS --------------
+# (mantÃ©m igual ao exemplo anterior, veja a parte 2 anterior para nÃ£o perder nada!)
+
+# ----------- OUTROS SLASH --------------
+@bot.tree.command(name="pingstaff", description="Envie uma mensagem anÃ´nima para o canal atual")
+@app_commands.describe(mensagem="Mensagem que serÃ¡ enviada no canal, sem mostrar quem enviou")
+async def pingstaff(interaction: discord.Interaction, mensagem: str):
+    await interaction.channel.send(mensagem)
+    await interaction.response.send_message("âœ… Mensagem enviada anonimamente no canal!", ephemeral=True)
+
+@bot.tree.command(name="ajuda", description="Mostra a lista de comandos disponÃ­veis")
+async def ajuda_slash(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="ðŸŒ Comandos do Bot da HADES",
+        description="Aqui estÃ£o todos os comandos disponÃ­veis:",
+        color=discord.Color.blue()
+    )
+    embed.add_field(
+        name="Fichas",
+        value=(
+            "/ficha [@usuÃ¡rio]\n"
+            "/ficha_hades2 [@usuÃ¡rio]\n"
+            "/edit_numero_ficha\n"
+            "/editar_ficha (menus)\n"
+            "/ver_ficha (ADM)"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Servidores",
+        value=(
+            "/adicionar_servidor <nome> <link> [@pessoa]\n"
+            "/remover_servidor <nome>\n"
+            "/atualizar_servidor <nome> @pessoa\n"
+            "/servidores\n"
+            "/servidor <nome>\n"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Avisos",
+        value=(
+            "/enviar_aviso_diario\n"
+            "/enviar_aviso_2dias\n"
+            "/editar_aviso_diario\n"
+            "/editar_aviso_2_dias\n"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Outros",
+        value="/pingstaff <mensagem>",
+        inline=False
+    )
+    embed.set_footer(text="Bot para gerenciar e divulgar servidores Roblox.")
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+keep_alive()
+bot.run(TOKEN)
