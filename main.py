@@ -35,7 +35,15 @@ TEXTOS = {
         "enviada": "✅ Ficha enviada com sucesso!",
         "refazendo": "Vamos recomeçar o preenchimento da ficha!",
         "cancelada": "Ok! Ficha não enviada. Caso queira, use /ficha novamente.",
-        "preenchida": "✅ Preenchimento da ficha concluído! Aguarde confirmação para enviar..."
+        "preenchida": "✅ Preenchimento da ficha concluído! Aguarde confirmação para enviar...",
+        "titulo_embed": "Confira sua ficha antes de enviar!",
+        "label_roblox": "Roblox",
+        "label_dps": "DPS",
+        "label_farm": "Farm",
+        "label_rank": "Rank",
+        "label_level": "Level",
+        "label_tempo": "Tempo",
+        "label_data": "Data"
     },
     "en": {
         "perguntas": [
@@ -53,7 +61,15 @@ TEXTOS = {
         "enviada": "✅ Form submitted successfully!",
         "refazendo": "Let's start filling out the form again!",
         "cancelada": "Okay! Form not sent. If you want, use /ficha again.",
-        "preenchida": "✅ Form completed! Please confirm to submit..."
+        "preenchida": "✅ Form completed! Please confirm to submit...",
+        "titulo_embed": "Check your form before submitting!",
+        "label_roblox": "Roblox",
+        "label_dps": "DPS",
+        "label_farm": "Farm",
+        "label_rank": "Rank",
+        "label_level": "Level",
+        "label_tempo": "Playtime",
+        "label_data": "Date"
     },
     "es": {
         "perguntas": [
@@ -71,7 +87,15 @@ TEXTOS = {
         "enviada": "✅ ¡Ficha enviada con éxito!",
         "refazendo": "¡Vamos a empezar de nuevo a completar la ficha!",
         "cancelada": "¡Ok! Ficha no enviada. Si desea, use /ficha de nuevo.",
-        "preenchida": "✅ ¡Ficha completada! Por favor, confirme para enviar..."
+        "preenchida": "✅ ¡Ficha completada! Por favor, confirme para enviar...",
+        "titulo_embed": "¡Revisa tu ficha antes de enviar!",
+        "label_roblox": "Roblox",
+        "label_dps": "DPS",
+        "label_farm": "Farm",
+        "label_rank": "Rango",
+        "label_level": "Nivel",
+        "label_tempo": "Tiempo de juego",
+        "label_data": "Fecha"
     }
 }
 
@@ -161,7 +185,6 @@ def salvar_numero_ficha(guilda, n):
     with open(f"numero_ficha_{guilda}.json", "w", encoding="utf-8") as f:
         json.dump({"numero": n}, f)
 
-# ---- FICHA ----
 class MenuIdioma(ui.View):
     def __init__(self, bot, canal_id, nome_guilda, target_user, canal_nome, canal_mencao):
         super().__init__(timeout=120)
@@ -224,21 +247,132 @@ async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id)
         title=f"🌌 Ficha de Jogador #{ficha['numero']} – Arise Crossover {bandeira} 🌌",
         color=discord.Color.purple()
     )
-    embed.add_field(name="🎮 Roblox", value=ficha['roblox'], inline=False)
-    embed.add_field(name="🏰 Guilda", value=nome_guilda_fmt, inline=True)
+    embed.add_field(name=f"🎮 {TEXTOS[idioma]['label_roblox']}", value=ficha['roblox'], inline=False)
+    embed.add_field(name=f"🏰 Guilda", value=nome_guilda_fmt, inline=True)
     embed.add_field(name="💬 Discord", value=discord_str, inline=True)
-    embed.add_field(name="⚔️ DPS", value=ficha['dps'], inline=False)
-    embed.add_field(name="💎 Farm", value=ficha['farm'], inline=False)
+    embed.add_field(name=f"⚔️ {TEXTOS[idioma]['label_dps']}", value=ficha['dps'], inline=False)
+    embed.add_field(name=f"💎 {TEXTOS[idioma]['label_farm']}", value=ficha['farm'], inline=False)
     embed.add_field(
         name="📊 Outras Informações",
-        value=f"🔹 Rank: {ficha['rank']}\n🔹 Level: {ficha['level']}\n🔹 Tempo: {ficha['tempo']}",
+        value=(f"🔹 {TEXTOS[idioma]['label_rank']}: {ficha['rank']}\n"
+               f"🔹 {TEXTOS[idioma]['label_level']}: {ficha['level']}\n"
+               f"🔹 {TEXTOS[idioma]['label_tempo']}: {ficha['tempo']}"),
         inline=False
     )
-    embed.set_footer(text=f"📆 Data da ficha: {ficha['data']}")
+    embed.set_footer(text=f"{TEXTOS[idioma]['label_data']}: {ficha['data']}")
     embed.set_thumbnail(url=avatar_url)
     if canal:
         await canal.send(embed=embed)
 
+class ConfirmarFichaView(ui.View):
+    def __init__(self, ficha_data, canal_destino, user, guilda, idioma, canal, bot_refazer):
+        super().__init__(timeout=60)
+        self.ficha_data = ficha_data
+        self.canal_destino = canal_destino
+        self.user = user
+        self.guilda = guilda
+        self.idioma = idioma
+        self.canal = canal
+        self.bot_refazer = bot_refazer
+
+        self.confirmar_button = ui.Button(label=TEXTOS[self.idioma]["sim"], style=discord.ButtonStyle.success, emoji="✅")
+        self.cancelar_button = ui.Button(label=TEXTOS[self.idioma]["nao"], style=discord.ButtonStyle.danger, emoji="❌")
+        self.confirmar_button.callback = self.confirmar
+        self.cancelar_button.callback = self.recusar
+        self.add_item(self.confirmar_button)
+        self.add_item(self.cancelar_button)
+
+    async def confirmar(self, interaction: discord.Interaction):
+        user_id = self.user.id
+        ficha_existente = carregar_ficha(user_id, self.guilda, self.idioma)
+        if ficha_existente:
+            numero_ficha = ficha_existente["numero"]
+        else:
+            numero_ficha = carregar_numero_ficha(self.guilda) + 1
+            salvar_numero_ficha(self.guilda, numero_ficha)
+        self.ficha_data["numero"] = numero_ficha
+        salvar_ficha(user_id, self.ficha_data, self.guilda, self.idioma)
+        await enviar_ficha_no_canal(interaction.client, self.user, self.idioma, self.ficha_data, self.guilda, self.canal_destino)
+        await self.canal.send(f"{self.user.mention} {TEXTOS[self.idioma]['enviada']}")
+        await interaction.response.edit_message(content=TEXTOS[self.idioma]['enviada'], embed=None, view=None)
+
+    async def recusar(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(
+            content=TEXTOS[self.idioma]['refazer_pergunta'],
+            embed=None,
+            view=RefazerFichaView(self.bot_refazer, self.canal, self.user, self.guilda, self.idioma)
+        )
+
+class RefazerFichaView(ui.View):
+    def __init__(self, bot_refazer, canal, user, guilda, idioma):
+        super().__init__(timeout=45)
+        self.bot_refazer = bot_refazer
+        self.canal = canal
+        self.user = user
+        self.guilda = guilda
+        self.idioma = idioma
+
+        self.sim_button = ui.Button(label=TEXTOS[self.idioma]["sim"], style=discord.ButtonStyle.primary, emoji="🔄")
+        self.nao_button = ui.Button(label=TEXTOS[self.idioma]["nao"], style=discord.ButtonStyle.secondary, emoji="⏹️")
+        self.sim_button.callback = self.refazer
+        self.nao_button.callback = self.parar
+        self.add_item(self.sim_button)
+        self.add_item(self.nao_button)
+
+    async def refazer(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(content=TEXTOS[self.idioma]['refazendo'], view=None)
+        await self.bot_refazer(self.canal, self.user, self.guilda, self.idioma)
+
+    async def parar(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(content=TEXTOS[self.idioma]['cancelada'], view=None)
+
+async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_destino, canal, bot_refazer):
+    bandeira = IDIOMAS.get(idioma, {}).get("bandeira", "")
+    embed = discord.Embed(
+        title=f"{TEXTOS[idioma]['titulo_embed']} {bandeira}",
+        color=discord.Color.blurple()
+    )
+    embed.add_field(name=f"🎮 {TEXTOS[idioma]['label_roblox']}", value=ficha_data['roblox'], inline=False)
+    embed.add_field(name=f"⚔️ {TEXTOS[idioma]['label_dps']}", value=ficha_data['dps'], inline=True)
+    embed.add_field(name=f"💎 {TEXTOS[idioma]['label_farm']}", value=ficha_data['farm'], inline=True)
+    embed.add_field(name=f"🔹 {TEXTOS[idioma]['label_rank']}", value=ficha_data['rank'], inline=True)
+    embed.add_field(name=f"🔹 {TEXTOS[idioma]['label_level']}", value=ficha_data['level'], inline=True)
+    embed.add_field(name=f"🔹 {TEXTOS[idioma]['label_tempo']}", value=ficha_data['tempo'], inline=True)
+    embed.set_footer(text=f"{TEXTOS[idioma]['label_data']}: {ficha_data['data']} | Guilda: {guilda} | Idioma: {idioma}")
+    view = ConfirmarFichaView(
+        ficha_data, canal_destino, user, guilda, idioma, canal, bot_refazer
+    )
+    await interaction.followup.send(
+        content=TEXTOS[idioma]['confirmar_envio'],
+        embed=embed,
+        view=view,
+        ephemeral=True
+    )
+
+async def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, target_user):
+    async def refazer(canal, user, guilda, idioma):
+        await iniciar_formulario(bot, interaction, idioma, canal, guilda, user)
+    respostas = await fazer_perguntas(interaction, canal, idioma, target_user)
+    if respostas is None:
+        return
+    data_atual = datetime.now().strftime("%d/%m/%Y")
+    user_id = target_user.id
+    ficha_existente = carregar_ficha(user_id, nome_guilda, idioma)
+    ficha = {
+        "idioma": idioma,
+        "roblox": respostas.get("roblox"),
+        "dps": respostas.get("dps"),
+        "farm": respostas.get("farm"),
+        "rank": respostas.get("rank"),
+        "level": respostas.get("level"),
+        "tempo": respostas.get("tempo"),
+        "data": data_atual,
+        "guilda": nome_guilda,
+        "discord": str(target_user.id)
+    }
+    canal_destino = FICHAS_CANAL_ID if nome_guilda == "hades" else FICHAS_CANAL_HADES2_ID
+    await interaction.followup.send(TEXTOS[idioma]['preenchida'], ephemeral=True)
+    await finalizar_ficha(interaction, target_user, ficha, nome_guilda, idioma, canal_destino, canal, refazer)
 # ========== NOVO FLUXO DE FICHA COM CONFIRMAÇÃO E MULTI-IDIOMA ==========
 class ConfirmarFichaView(ui.View):
     def __init__(self, ficha_data, canal_destino, user, guilda, idioma, canal, bot_refazer):
