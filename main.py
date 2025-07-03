@@ -497,6 +497,165 @@ async def minha_ficha(
     )
     embed.set_footer(text=f"📆 Data da ficha: {ficha['data']}")
     await interaction.response.send_message(embed=embed, ephemeral=True)
+# =======================
+# PARTE 2 - COMANDOS DO BOT HADES
+# =======================
+
+# =======================
+# COMANDOS EXTRAS E IMPORTANTE PARA O SERVIDOR
+# =======================
+# ----------- SERVIDORES --------------
+def carregar_servidores():
+    if not os.path.exists(ARQUIVO):
+        return []
+    with open(ARQUIVO, 'r') as f:
+        return json.load(f)
+def salvar_servidores(lista):
+    with open(ARQUIVO, 'w') as f:
+        json.dump(lista, f, indent=4)
+
+@bot.tree.command(name="adicionar_servidor", description="Adiciona ou atualiza um servidor com nome, link e foto opcional")
+@app_commands.describe(nome="Nome do servidor", link="Link do servidor", membro="(Opcional) Membro para foto/autor")
+async def adicionar_servidor_slash(interaction: discord.Interaction, nome: str, link: str, membro: discord.Member = None):
+    servidores = carregar_servidores()
+    autor_id = membro.id if membro else None
+    for servidor in servidores:
+        if servidor['nome'].lower() == nome.lower():
+            servidor['link'] = link
+            servidor['autor_id'] = autor_id
+            salvar_servidores(servidores)
+            await interaction.response.send_message(f"🔁 Servidor **{nome}** atualizado!", ephemeral=True)
+            return
+    servidores.append({'nome': nome, 'link': link, 'autor_id': autor_id})
+    salvar_servidores(servidores)
+    await interaction.response.send_message(f"✅ Servidor **{nome}** adicionado com sucesso!", ephemeral=True)
+
+@bot.tree.command(name="remover_servidor", description="Remove um servidor salvo pelo nome")
+@app_commands.describe(nome="Nome do servidor")
+async def remover_servidor_slash(interaction: discord.Interaction, nome: str):
+    servidores = carregar_servidores()
+    nome_lower = nome.lower()
+    novos = [s for s in servidores if s['nome'].lower() != nome_lower]
+    if len(novos) == len(servidores):
+        await interaction.response.send_message(f"❌ Nenhum servidor chamado **{nome}** encontrado.", ephemeral=True)
+        return
+    salvar_servidores(novos)
+    await interaction.response.send_message(f"🗑️ Servidor **{nome}** removido com sucesso!", ephemeral=True)
+
+@bot.tree.command(name="atualizar_servidor", description="Atualiza a imagem do servidor com o avatar da pessoa mencionada")
+@app_commands.describe(nome="Nome do servidor", membro="Membro para atualizar foto")
+async def atualizar_servidor_slash(interaction: discord.Interaction, nome: str, membro: discord.Member):
+    servidores = carregar_servidores()
+    for servidor in servidores:
+        if servidor['nome'].lower() == nome.lower():
+            servidor['autor_id'] = membro.id
+            salvar_servidores(servidores)
+            await interaction.response.send_message(f"✅ Foto do servidor **{nome}** atualizada para **{membro.display_name}**.", ephemeral=True)
+            return
+    await interaction.response.send_message(f"❌ Servidor **{nome}** não encontrado.", ephemeral=True)
+
+@bot.tree.command(name="servidores", description="Lista todos os servidores com botão de entrada")
+async def servidores_slash(interaction: discord.Interaction):
+    servidores = carregar_servidores()
+    if not servidores:
+        await interaction.response.send_message("❌ Nenhum servidor foi adicionado ainda.", ephemeral=True)
+        return
+    for servidor in servidores:
+        embed = discord.Embed(
+            title=servidor["nome"],
+            description="Clique no botão abaixo para entrar no servidor do Roblox.",
+            color=discord.Color.green()
+        )
+        autor_id = servidor.get("autor_id")
+        if autor_id:
+            membro = interaction.guild.get_member(autor_id)
+            if membro:
+                embed.set_author(name=membro.display_name, icon_url=membro.avatar.url if membro.avatar else None)
+        view = discord.ui.View()
+        view.add_item(discord.ui.Button(label="🎮 Jogar agora", url=servidor["link"]))
+        await interaction.channel.send(embed=embed, view=view)
+    await interaction.response.send_message("Lista de servidores enviada!", ephemeral=True)
+
+@bot.tree.command(name="servidor", description="Mostra somente o servidor especificado")
+@app_commands.describe(nome="Nome do servidor")
+async def servidor_slash(interaction: discord.Interaction, nome: str):
+    servidores = carregar_servidores()
+    nome_lower = nome.lower()
+    for servidor in servidores:
+        if servidor["nome"].lower() == nome_lower:
+            embed = discord.Embed(
+                title=servidor["nome"],
+                description="Clique no botão abaixo para entrar no servidor do Roblox.",
+                color=discord.Color.green()
+            )
+            autor_id = servidor.get("autor_id")
+            if autor_id:
+                membro = interaction.guild.get_member(autor_id)
+                if membro:
+                    embed.set_author(name=membro.display_name, icon_url=membro.avatar.url if membro.avatar else None)
+            view = discord.ui.View()
+            view.add_item(discord.ui.Button(label="🎮 Jogar agora", url=servidor["link"]))
+            await interaction.channel.send(embed=embed, view=view)
+            await interaction.response.send_message(f"Servidor **{nome}** encontrado!", ephemeral=True)
+            return
+    await interaction.response.send_message(f"❌ Servidor **{nome}** não foi encontrado.", ephemeral=True)
+
+# ----------- AVISOS --------------
+# (mantém igual ao exemplo anterior, veja a parte 2 anterior para não perder nada!)
+
+# ----------- OUTROS SLASH --------------
+@bot.tree.command(name="pingstaff", description="Envie uma mensagem anônima para o canal atual")
+@app_commands.describe(mensagem="Mensagem que será enviada no canal, sem mostrar quem enviou")
+async def pingstaff(interaction: discord.Interaction, mensagem: str):
+    await interaction.channel.send(mensagem)
+    await interaction.response.send_message("✅ Mensagem enviada anonimamente no canal!", ephemeral=True)
+
+@bot.tree.command(name="ajuda", description="Mostra a lista de comandos disponíveis")
+async def ajuda_slash(interaction: discord.Interaction):
+    embed = discord.Embed(
+        title="🌐 Comandos do Bot da HADES",
+        description="Aqui estão todos os comandos disponíveis:",
+        color=discord.Color.blue()
+    )
+    embed.add_field(
+        name="Fichas",
+        value=(
+            "/ficha [@usuário]\n"
+            "/ficha_hades2 [@usuário]\n"
+            "/edit_numero_ficha\n"
+            "/editar_ficha (menus)\n"
+            "/ver_ficha (ADM)"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Servidores",
+        value=(
+            "/adicionar_servidor <nome> <link> [@pessoa]\n"
+            "/remover_servidor <nome>\n"
+            "/atualizar_servidor <nome> @pessoa\n"
+            "/servidores\n"
+            "/servidor <nome>\n"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Avisos",
+        value=(
+            "/enviar_aviso_diario\n"
+            "/enviar_aviso_2dias\n"
+            "/editar_aviso_diario\n"
+            "/editar_aviso_2_dias\n"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="Outros",
+        value="/pingstaff <mensagem>",
+        inline=False
+    )
+    embed.set_footer(text="Bot para gerenciar e divulgar servidores Roblox.")
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 keep_alive()
 bot.run(TOKEN)
