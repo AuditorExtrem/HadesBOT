@@ -432,17 +432,30 @@ class RefazerFichaView(ui.View):
         self.add_item(self.nao_button)
 
     async def refazer(self, interaction: discord.Interaction):
+    try:
         await interaction.response.edit_message(content=TEXTOS[self.idioma]['refazendo'], view=None)
-        await self.bot_refazer(self.canal, self.user, self.guilda, self.idioma)
+    except discord.NotFound:
+        await interaction.followup.send("⚠️ Interação expirada ou já respondida.", ephemeral=True)
+        return
 
-    async def parar(self, interaction: discord.Interaction):
+    await self.bot_refazer(self.canal, self.user, self.guilda, self.idioma)
+
+async def parar(self, interaction: discord.Interaction):
+    try:
         await interaction.response.edit_message(content=TEXTOS[self.idioma]['cancelada'], view=None)
+    except discord.NotFound:
+        await interaction.followup.send("⚠️ Interação expirada ou já respondida.", ephemeral=True)
+    await interaction.response.edit_message(content=TEXTOS[self.idioma]['cancelada'], view=None)
+except discord.NotFound:
+    await interaction.followup.send("⚠️ Interação expirada ou já respondida.", ephemeral=True)
 
 async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_destino, canal, bot_refazer):
     bandeira = IDIOMAS.get(idioma, {}).get("bandeira", "")
     embed = discord.Embed(
-        title = f"{TEXTOS[idioma]['titulo_embed']} {bandeira}"
-        color=discord.Color.blurple()
+        embed = discord.Embed(
+    title=f"{TEXTOS[idioma]['titulo_embed']} {bandeira}",
+    color=discord.Color.blurple()
+        )
     )
     embed.add_field(name="🎮 Roblox", value=ficha_data['roblox'], inline=False)
     embed.add_field(name="⚔️ DPS", value=ficha_data['dps'], inline=True)
@@ -462,14 +475,20 @@ async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_d
     )
 
 async def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, target_user):
+    # Defer para garantir que a interação foi respondida e poder usar followup
+    if not interaction.response.is_done():
+        await interaction.response.defer(ephemeral=True)
+
     async def refazer(canal, user, guilda, idioma):
         await iniciar_formulario(bot, interaction, idioma, canal, guilda, user)
+
     respostas = await fazer_perguntas(interaction, canal, idioma, target_user)
     if respostas is None:
         return
+
     data_atual = datetime.now().strftime("%d/%m/%Y")
     user_id = target_user.id
-    ficha_existente = carregar_ficha(user_id, nome_guilda, idioma)
+
     ficha = {
         "idioma": idioma,
         "roblox": respostas.get("roblox"),
@@ -482,7 +501,9 @@ async def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, targe
         "guilda": nome_guilda,
         "discord": str(target_user.id)
     }
+
     canal_destino = FICHAS_CANAL_ID if nome_guilda == "hades" else FICHAS_CANAL_HADES2_ID
+
     await interaction.followup.send(TEXTOS[idioma]['preenchida'], ephemeral=True)
     await finalizar_ficha(interaction, target_user, ficha, nome_guilda, idioma, canal_destino, canal, refazer)
   # ----------- SLASH COMMANDS DE FICHA -----------
