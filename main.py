@@ -1165,5 +1165,83 @@ async def ajuda_slash(interaction: discord.Interaction):
     embed.set_footer(text="Bot para gerenciar e divulgar servidores Roblox.")
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
+# ----------- CORREÇÃO DE NÚMERO DE FICHA (AJUSTADO PARA ARQUIVOS AGRUPADOS) --------------
+
+@bot.tree.command(
+    name="corrigir_numero_ficha",
+    description="Corrige o número de uma ficha duplicada."
+)
+@app_commands.describe(
+    numero_atual="Número duplicado (ex: 68)",
+    novo_numero="Novo número para aplicar (ex: 69)",
+    guilda="Nome da guilda (ex: hades, hades2)"
+)
+async def corrigir_numero_ficha(
+    interaction: discord.Interaction,
+    numero_atual: int,
+    novo_numero: int,
+    guilda: str
+):
+    guilda = guilda.lower()
+    fichas_encontradas = []
+    for idioma in ["pt", "en", "es"]:
+        arquivo = f"fichas_{guilda}_{idioma}.json"
+        if not os.path.exists(arquivo):
+            continue
+        with open(arquivo, "r", encoding="utf-8") as f:
+            dados = json.load(f)
+            for uid, ficha in dados.items():
+                if ficha.get("numero") == numero_atual:
+                    fichas_encontradas.append({
+                        "dados": ficha,
+                        "arquivo": arquivo,
+                        "idioma": idioma,
+                        "uid": uid
+                    })
+    # DEFIRA A INTERAÇÃO LOGO!
+    await interaction.response.defer(ephemeral=True)
+
+    if not fichas_encontradas:
+        await interaction.followup.send("❌ Nenhuma ficha com esse número foi encontrada.", ephemeral=True)
+        return
+
+    descricao = ""
+    for i, ficha in enumerate(fichas_encontradas):
+        d = ficha["dados"]
+        descricao += f"`{i+1}` - Roblox: **{d.get('roblox', '-')[:20]}**, Discord: <@{d.get('discord', '-')}> (Idioma: {ficha['idioma']})\n"
+
+    await interaction.followup.send(
+        f"Foram encontradas **{len(fichas_encontradas)}** fichas com o número **{numero_atual}**:\n{descricao}\n\nResponda com o número da ficha que você deseja corrigir.",
+        ephemeral=True
+    )
+
+    def check(m):
+        return m.author.id == interaction.user.id and m.channel == interaction.channel and m.content.isdigit()
+
+    try:
+        msg = await bot.wait_for("message", check=check, timeout=30)
+        escolha = int(msg.content.strip())
+        if not (1 <= escolha <= len(fichas_encontradas)):
+            await interaction.followup.send("❌ Escolha inválida.", ephemeral=True)
+            return
+
+        ficha_escolhida = fichas_encontradas[escolha - 1]
+        ficha_escolhida["dados"]["numero"] = novo_numero
+
+        # Atualiza o arquivo correspondente
+        with open(ficha_escolhida["arquivo"], "r", encoding="utf-8") as f:
+            dados_arquivo = json.load(f)
+        dados_arquivo[ficha_escolhida["uid"]]["numero"] = novo_numero
+        with open(ficha_escolhida["arquivo"], "w", encoding="utf-8") as f:
+            json.dump(dados_arquivo, f, ensure_ascii=False, indent=4)
+
+        await interaction.followup.send(f"✅ A ficha foi atualizada para o número **{novo_numero}** com sucesso!", ephemeral=True)
+
+    except TimeoutError:
+        await interaction.followup.send("⏰ Tempo esgotado. Nenhuma escolha foi feita.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"❌ Ocorreu um erro: {e}", ephemeral=True)
+
+# ----------- FIM DA PARTE 2 -----------
 keep_alive()
 bot.run(TOKEN)
