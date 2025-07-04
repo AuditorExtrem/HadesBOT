@@ -1030,10 +1030,12 @@ async def enviar_aviso(tipo, canal_id, cargo_id, texto_padrao):
 async def on_ready():
     print(f'✅ {bot.user} está online!')
     try:
+        # Sincronização global (pode levar até 1h para propagar)
         synced = await bot.tree.sync()
-        print(f"🔄 Sincronizados {len(synced)} comandos slash")
+        print("🔄 Comandos sincronizados:", [c.name for c in synced])
     except Exception as e:
         print(f"❌ Erro ao sincronizar slash commands: {e}")
+    
     enviar_aviso_diario.start()
     aviso_cada_2_dias.start()
     keep_alive_task.start()
