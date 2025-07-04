@@ -883,7 +883,7 @@ async def servidores_slash(interaction: discord.Interaction):
         view = discord.ui.View()
         view.add_item(discord.ui.Button(label="🎮 Jogar agora", url=servidor["link"]))
         await interaction.channel.send(embed=embed, view=view)
-    await interaction.response.send_message("Lista de servidores enviada!", ephemeral=True
+    await interaction.response.send_message("Lista de servidores enviada!", ephemeral=True)
 
 @bot.tree.command(name="servidor", description="Mostra somente o servidor especificado")
 @app_commands.describe(nome="Nome do servidor")
