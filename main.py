@@ -465,9 +465,10 @@ class RefazerFichaView(ui.View):
 async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_destino, canal, bot_refazer):
     bandeira = IDIOMAS.get(idioma, {}).get("bandeira", "")
     embed = discord.Embed(
-        title=f"{TEXTOS[idioma]['titulo_embed']} {bandeira}",
-        color=discord.Color.blurple()
-    )
+        embed = discord.Embed(
+    title = f"{TEXTOS[idioma]['titulo_embed']} {bandeira}",
+    color = discord.Color.blurple()
+)
     embed.add_field(name="🎮 Roblox", value=ficha_data['roblox'], inline=False)
     embed.add_field(name="⚔️ DPS", value=ficha_data['dps'], inline=True)
     embed.add_field(name="💎 Farm", value=ficha_data['farm'], inline=True)
