@@ -305,7 +305,7 @@ async def servidor(interaction: discord.Interaction, nome: str):
             await interaction.response.send_message(f"Servidor **{nome}** encontrado!", ephemeral=True)
             return
             await interaction.response.send_message(f"❌ Servidor **{nome}** não foi encontrado.", ephemeral=True)
-            @bot.tree.command(name="enviar_aviso_diario", description="Envia aviso diário manualmente")
+@bot.tree.command(name="enviar_aviso_diario", description="Envia aviso diário manualmente")
 @app_commands.default_permissions(administrator=True)
 async def enviar_aviso_diario_cmd(interaction: discord.Interaction):
     await enviar_aviso("diario", CANAL_AVISOS_ID, CARGO_ANALISE_ID, "# 📝 Verifiquem a Entrada/diaria e abra seu ticket!", bot)
