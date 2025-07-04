@@ -67,7 +67,93 @@ async def ficha_hades2(interaction: discord.Interaction, usuario: discord.Member
             await interaction.response.send_message(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
         except Exception:
             await interaction.response.send_message(f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar DMs!", ephemeral=True)
+class ConfirmarExclusaoView(discord.ui.View):
+    def __init__(self, arquivo, user_id_antigo):
+        super().__init__(timeout=60)
+        self.arquivo = arquivo
+        self.user_id_antigo = user_id_antigo
 
+    @discord.ui.button(label="Sim", style=discord.ButtonStyle.danger, emoji="✅")
+    async def confirmar(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            with open(self.arquivo, "r", encoding="utf-8") as f:
+                todas = json.load(f)
+            if self.user_id_antigo in todas:
+                del todas[self.user_id_antigo]
+                with open(self.arquivo, "w", encoding="utf-8") as f:
+                    json.dump(todas, f, ensure_ascii=False, indent=2)
+                await interaction.response.edit_message(content="🗑️ Ficha original excluída com sucesso.", view=None)
+            else:
+                await interaction.response.edit_message(content="⚠️ A ficha original já foi removida ou não existe.", view=None)
+        except Exception as e:
+            await interaction.response.edit_message(content=f"❌ Erro ao excluir ficha: {e}", view=None)
+
+    @discord.ui.button(label="Não", style=discord.ButtonStyle.secondary, emoji="❌")
+    async def cancelar(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(content="A exclusão da ficha original foi cancelada.", view=None)
+
+@bot.tree.command(name="duplicar_ficha", description="Duplica uma ficha existente para um novo número ou usuário (ADMIN)")
+@app_commands.describe(
+    numero_antigo="Número atual da ficha",
+    user_id_antigo="ID do usuário da ficha a ser duplicada",
+    numero_novo="Novo número da ficha duplicada",
+    user_id_novo="(Opcional) Novo ID de usuário para a ficha duplicada",
+    guilda="Selecione a guilda (hades ou hades2)",
+    idioma="Selecione o idioma (pt, en, es)"
+)
+@app_commands.choices(
+    guilda=[
+        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="Hades 2", value="hades2"),
+    ],
+    idioma=[
+        app_commands.Choice(name="Português", value="pt"),
+        app_commands.Choice(name="Inglês", value="en"),
+        app_commands.Choice(name="Espanhol", value="es"),
+    ],
+)
+@app_commands.default_permissions(administrator=True)
+async def duplicar_ficha(
+    interaction: discord.Interaction,
+    numero_antigo: int,
+    user_id_antigo: str,
+    numero_novo: int,
+    user_id_novo: str = None,
+    guilda: app_commands.Choice[str] = None,
+    idioma: app_commands.Choice[str] = None,
+):
+    arquivo = arquivo_fichas(guilda.value, idioma.value)
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            todas = json.load(f)
+    except Exception:
+        await interaction.response.send_message("❌ Não foi possível abrir o arquivo de fichas.", ephemeral=True)
+        return
+
+    ficha = todas.get(user_id_antigo)
+    if not ficha or ficha.get("numero") != numero_antigo:
+        await interaction.response.send_message("❌ Ficha de origem não encontrada.", ephemeral=True)
+        return
+
+    novo_id = user_id_novo if user_id_novo else user_id_antigo
+    if novo_id in todas:
+        await interaction.response.send_message("❌ Já existe uma ficha com esse user_id no arquivo. Exclua ou use outro ID.", ephemeral=True)
+        return
+
+    nova_ficha = ficha.copy()
+    nova_ficha["numero"] = numero_novo
+    todas[novo_id] = nova_ficha
+
+    with open(arquivo, "w", encoding="utf-8") as f:
+        json.dump(todas, f, ensure_ascii=False, indent=2)
+
+    mensagem = (
+        f"✅ Ficha duplicada com sucesso!\n"
+        f"Novo número: **{numero_novo}**\nUser ID: **{novo_id}**\n\n"
+        f"❓ Deseja excluir a ficha original de número **{numero_antigo}**?"
+    )
+    view = ConfirmarExclusaoView(arquivo, user_id_antigo)
+    await interaction.response.send_message(mensagem, view=view, ephemeral=True)
 @bot.tree.command(name="ver_ficha", description="Ver ficha de jogador")
 @app_commands.describe(numero="Número da ficha", guilda="Guilda", idioma="Idioma")
 @app_commands.choices(
