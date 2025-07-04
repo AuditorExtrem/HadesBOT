@@ -726,34 +726,54 @@ async def arquivar_ficha(
     view = ArquivarFichaMotivoView(interaction, numero, guilda.name, idioma.name, uid, ficha)
     await interaction.response.send_message("Escolha o motivo do arquivamento:", view=view, ephemeral=True)
 
-@bot.tree.command(name="corrigir_numero_ficha", description="Corrige o número de uma ficha e vincula o usuário correto.")
+import os
+import json
+
+@bot.tree.command(name="corrigir_numero_ficha", description="Corrige o número de uma ficha duplicada.")
 @app_commands.describe(
-    usuario="Usuário dono da ficha que será corrigida",
-    guilda="Nome da guilda (ex: hades, hades2)",
-    novo_numero="Novo número para a ficha"
+    numero_atual="Número da ficha duplicada (ex: 68)",
+    novo_numero="Novo número para atribuir (ex: 69)",
+    guilda="Nome da guilda (ex: hades, hades2)"
 )
-async def corrigir_numero_ficha(interaction: discord.Interaction, usuario: discord.Member, guilda: str, novo_numero: int):
+async def corrigir_numero_ficha(interaction: discord.Interaction, numero_atual: int, novo_numero: int, guilda: str):
     guilda = guilda.lower()
-    user_id = usuario.id
+    caminhos = [
+        f"fichas/{guilda}/pt",
+        f"fichas/{guilda}/en",
+        f"fichas/{guilda}/es"
+    ]
 
-    # Tenta encontrar a ficha do usuário em qualquer idioma
-    ficha = (
-        carregar_ficha(user_id, guilda, "pt") or
-        carregar_ficha(user_id, guilda, "en") or
-        carregar_ficha(user_id, guilda, "es")
-    )
+    ficha_encontrada = None
+    caminho_arquivo = None
 
-    if not ficha:
-        await interaction.response.send_message("❌ Ficha não encontrada para esse usuário e guilda.", ephemeral=True)
+    # Busca em todos os idiomas
+    for path in caminhos:
+        if not os.path.exists(path):
+            continue
+        for nome_arquivo in os.listdir(path):
+            if nome_arquivo.endswith(".json"):
+                with open(f"{path}/{nome_arquivo}", "r", encoding="utf-8") as f:
+                    dados = json.load(f)
+                    if dados.get("numero") == numero_atual:
+                        ficha_encontrada = dados
+                        caminho_arquivo = f"{path}/{nome_arquivo}"
+                        break
+        if ficha_encontrada:
+            break
+
+    if not ficha_encontrada:
+        await interaction.response.send_message("❌ Nenhuma ficha com esse número foi encontrada.", ephemeral=True)
         return
 
-    ficha["numero"] = novo_numero
-    ficha["discord"] = str(user_id)  # Corrige o ID salvo (isso que resolve!)
+    # Atualiza número
+    ficha_encontrada["numero"] = novo_numero
 
-    salvar_ficha(user_id, ficha, guilda, ficha.get("idioma", "pt"))
+    # Salva de volta
+    with open(caminho_arquivo, "w", encoding="utf-8") as f:
+        json.dump(ficha_encontrada, f, ensure_ascii=False, indent=4)
 
     await interaction.response.send_message(
-        f"✅ Número da ficha de {usuario.mention} alterado para **{novo_numero}** e ID corrigido.",
+        f"✅ Ficha número **{numero_atual}** foi atualizada para **{novo_numero}** com sucesso!",
         ephemeral=True
     )
 @bot.tree.command(name="minha_ficha", description="Veja rapidamente sua ficha cadastrada em uma guilda/idioma")
