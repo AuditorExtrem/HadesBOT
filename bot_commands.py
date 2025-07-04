@@ -130,12 +130,7 @@ async def forcar_editar_numero(
         conteudo = msg.content
 
         # Extrair o user_id da ficha usando regex
-        match = re.search(r"<@?(\d{15,20})>", conteudo)
-        if not match:
-            await interaction.followup.send("❌ Não foi possível extrair o ID do usuário da mensagem.")
-            return
-
-        user_id = match.group(1)
+        user_id = "521096158324457502"  # Substitua aqui com o ID do dono da ficha
         arquivo = arquivo_fichas(guilda.value, idioma.value)
 
         with open(arquivo, "r", encoding="utf-8") as f:
