@@ -729,65 +729,87 @@ async def arquivar_ficha(
 import os
 import json
 from discord.ext import commands
-from discord import Interaction, app_commands, Embed
+from discord import Interaction, app_commands
 from discord.ui import View, Button
 
-@bot.tree.command(name="corrigir_numero_ficha", description="Corrige o número de uma ficha duplicada.") @app_commands.describe( numero_atual="Número duplicado (ex: 68)", novo_numero="Novo número para aplicar (ex: 69)", guilda="Nome da guilda (ex: hades, hades2)" ) async def corrigir_numero_ficha(interaction: Interaction, numero_atual: int, novo_numero: int, guilda: str): guilda = guilda.lower() caminhos = [ f"fichas/{guilda}/pt", f"fichas/{guilda}/en", f"fichas/{guilda}/es" ]
+bot = commands.Bot(command_prefix="!")  # Adicione isso se ainda não tiver definido o bot
 
-fichas_encontradas = []
-
-for path in caminhos:
-    idioma = path.split("/")[-1]
-    if not os.path.exists(path):
-        continue
-    for nome_arquivo in os.listdir(path):
-        if nome_arquivo.endswith(".json"):
-            with open(f"{path}/{nome_arquivo}", "r", encoding="utf-8") as f:
-                dados = json.load(f)
-                if dados.get("numero") == numero_atual:
-                    fichas_encontradas.append({
-                        "dados": dados,
-                        "arquivo": f"{path}/{nome_arquivo}",
-                        "idioma": idioma
-                    })
-
-if not fichas_encontradas:
-    await interaction.response.send_message("❌ Nenhuma ficha com esse número foi encontrada.", ephemeral=True)
-    return
-
-# Exibe fichas encontradas
-descricao = ""
-for i, ficha in enumerate(fichas_encontradas):
-    d = ficha["dados"]
-    descricao += f"`{i+1}` - Roblox: **{d.get('roblox', '-')[:20]}**, Discord: <@{d.get('discord', '-')}> (Idioma: {ficha['idioma']})\n"
-
-await interaction.response.send_message(
-    f"Foram encontradas **{len(fichas_encontradas)}** fichas com o número **{numero_atual}**:\n{descricao}\n\nResponda com o número da ficha que você deseja corrigir.",
-    ephemeral=True
+@bot.tree.command(
+    name="corrigir_numero_ficha",
+    description="Corrige o número de uma ficha duplicada."
 )
+@app_commands.describe(
+    numero_atual="Número duplicado (ex: 68)",
+    novo_numero="Novo número para aplicar (ex: 69)",
+    guilda="Nome da guilda (ex: hades, hades2)"
+)
+async def corrigir_numero_ficha(
+    interaction: Interaction,
+    numero_atual: int,
+    novo_numero: int,
+    guilda: str
+):
+    guilda = guilda.lower()
+    caminhos = [
+        f"fichas/{guilda}/pt",
+        f"fichas/{guilda}/en",
+        f"fichas/{guilda}/es"
+    ]
 
-def check(m):
-    return m.author.id == interaction.user.id and m.channel == interaction.channel and m.content.isdigit()
+    fichas_encontradas = []
 
-try:
-    msg = await bot.wait_for("message", check=check, timeout=30)
-    escolha = int(msg.content.strip())
-    if not (1 <= escolha <= len(fichas_encontradas)):
-        await interaction.followup.send("❌ Escolha inválida.", ephemeral=True)
+    for path in caminhos:
+        idioma = path.split("/")[-1]
+        if not os.path.exists(path):
+            continue
+        for nome_arquivo in os.listdir(path):
+            if nome_arquivo.endswith(".json"):
+                with open(f"{path}/{nome_arquivo}", "r", encoding="utf-8") as f:
+                    dados = json.load(f)
+                    if dados.get("numero") == numero_atual:
+                        fichas_encontradas.append({
+                            "dados": dados,
+                            "arquivo": f"{path}/{nome_arquivo}",
+                            "idioma": idioma
+                        })
+
+    if not fichas_encontradas:
+        await interaction.response.send_message("❌ Nenhuma ficha com esse número foi encontrada.", ephemeral=True)
         return
 
-    ficha_escolhida = fichas_encontradas[escolha - 1]
-    ficha_escolhida["dados"]["numero"] = novo_numero
+    # Exibe fichas encontradas
+    descricao = ""
+    for i, ficha in enumerate(fichas_encontradas):
+        d = ficha["dados"]
+        descricao += f"`{i+1}` - Roblox: **{d.get('roblox', '-')[:20]}**, Discord: <@{d.get('discord', '-')}> (Idioma: {ficha['idioma']})\n"
 
-    with open(ficha_escolhida["arquivo"], "w", encoding="utf-8") as f:
-        json.dump(ficha_escolhida["dados"], f, ensure_ascii=False, indent=4)
+    await interaction.response.send_message(
+        f"Foram encontradas **{len(fichas_encontradas)}** fichas com o número **{numero_atual}**:\n{descricao}\n\nResponda com o número da ficha que você deseja corrigir.",
+        ephemeral=True
+    )
 
-    await interaction.followup.send(f"✅ A ficha foi atualizada para o número **{novo_numero}** com sucesso!", ephemeral=True)
+    def check(m):
+        return m.author.id == interaction.user.id and m.channel == interaction.channel and m.content.isdigit()
 
-except TimeoutError:
-    await interaction.followup.send("⏰ Tempo esgotado. Nenhuma escolha foi feita.", ephemeral=True)
-except Exception as e:
-    await interaction.followup.send(f"❌ Ocorreu um erro: {e}", ephemeral=True)
+    try:
+        msg = await bot.wait_for("message", check=check, timeout=30)
+        escolha = int(msg.content.strip())
+        if not (1 <= escolha <= len(fichas_encontradas)):
+            await interaction.followup.send("❌ Escolha inválida.", ephemeral=True)
+            return
+
+        ficha_escolhida = fichas_encontradas[escolha - 1]
+        ficha_escolhida["dados"]["numero"] = novo_numero
+
+        with open(ficha_escolhida["arquivo"], "w", encoding="utf-8") as f:
+            json.dump(ficha_escolhida["dados"], f, ensure_ascii=False, indent=4)
+
+        await interaction.followup.send(f"✅ A ficha foi atualizada para o número **{novo_numero}** com sucesso!", ephemeral=True)
+
+    except TimeoutError:
+        await interaction.followup.send("⏰ Tempo esgotado. Nenhuma escolha foi feita.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"❌ Ocorreu um erro: {e}", ephemeral=True)
 
 @bot.tree.command(name="minha_ficha", description="Veja rapidamente sua ficha cadastrada em uma guilda/idioma")
 @app_commands.choices(
