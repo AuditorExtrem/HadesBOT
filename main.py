@@ -231,14 +231,29 @@ async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id)
     discord_id = ficha.get("discord", None)
     member = None
     canal = bot.get_channel(canal_id)
+
     if discord_id and str(discord_id).isdigit() and canal and canal.guild:
         member = canal.guild.get_member(int(discord_id))
+
     if member:
         avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
         display_name = member.display_name
+        mention = member.mention
     else:
-        avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
-        display_name = user.display_name
+        try:
+            fetched_user = await bot.fetch_user(int(discord_id))
+            avatar_url = fetched_user.avatar.url if fetched_user.avatar else fetched_user.default_avatar.url
+            display_name = fetched_user.display_name
+            mention = fetched_user.mention
+        except:
+            avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
+            display_name = user.display_name
+            mention = f"<@{discord_id}>" if discord_id else user.mention
+
+    # Agora você pode usar:
+    # - `display_name` → nome visível
+    # - `mention`      → para exibir <@...> sempre clicável
+    # - `avatar_url`   → imagem para embed
 
     nome_guilda_fmt = "Hades" if nome_guilda == "hades" else "Hades 2"
     bandeira = IDIOMAS.get(ficha.get("idioma"), {}).get("bandeira", "")
