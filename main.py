@@ -731,8 +731,12 @@ import json
 from discord.ext import commands
 from discord import Interaction, app_commands
 from discord.ui import View, Button
+import discord  # se ainda não estiver importado
 
-bot = commands.Bot(command_prefix="!")  # Adicione isso se ainda não tiver definido o bot
+intents = discord.Intents.default()
+intents.message_content = True  # Necessário se você usa bot.wait_for()
+
+bot = commands.Bot(command_prefix="!", intents=intents)  # Adicione isso se ainda não tiver definido o bot
 
 @bot.tree.command(
     name="corrigir_numero_ficha",
