@@ -560,7 +560,7 @@ async def slash_ficha_hades2(interaction: discord.Interaction, usuario: discord.
         except Exception:
             await interaction.response.send_message(f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar DMs!", ephemeral=True)
         
-@tree.command(name="editar_numero", description="Edita o número inicial das fichas da guilda.")
+@bot.tree.command(name="editar_numero", description="Edita o número inicial das fichas da guilda.")
 @app_commands.describe(
     guilda="Nome da guilda (ex: hades, hades2)",
     numero="Novo número inicial das fichas"
