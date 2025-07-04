@@ -168,7 +168,8 @@ async def minha_ficha(
     guilda="Selecione a guilda (hades ou hades2)",
     idioma="Selecione o idioma (pt, en, es)",
     campo="Campo a editar",
-    valor="Novo valor (se campo for Discord, marque o usuário)"
+    valor="Novo valor (se campo for Discord, marque o usuário)",
+    user_id="(Opcional) Discord ID do usuário dono da ficha"
 )
 @app_commands.choices(
     guilda=[
@@ -191,12 +192,36 @@ async def editar_ficha(
     guilda: app_commands.Choice[str],
     idioma: app_commands.Choice[str],
     campo: app_commands.Choice[str],
-    valor: str
+    valor: str,
+    user_id: str = None   # Novo campo opcional!
 ):
-    uid, ficha = carregar_ficha_por_numero(numero, guilda.value, idioma.value)
+    # Busca precisa: se user_id fornecido, edita exatamente a ficha desse user com esse número
+    ficha_uid = None
+    ficha = None
+    arquivo = arquivo_fichas(guilda.value, idioma.value)
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            todas = json.load(f)
+    except Exception:
+        todas = {}
+    if user_id and user_id in todas:
+        if todas[user_id].get("numero") == numero:
+            ficha_uid = user_id
+            ficha = todas[user_id]
+    if ficha is None:
+        # Busca padrão: primeiro que bater o número
+        for uid, ficha_data in todas.items():
+            if ficha_data.get("numero") == numero:
+                ficha_uid = uid
+                ficha = ficha_data
+                # Se user_id foi passado mas não bateu, continua procurando normalmente
+                if user_id and uid != user_id:
+                    continue
+                break
     if not ficha:
         await interaction.response.send_message("❌ Ficha não encontrada.", ephemeral=True)
         return
+
     novo_valor = valor
     if campo.value == "discord":
         if valor.startswith("<@") and valor.endswith(">"):
@@ -212,12 +237,11 @@ async def editar_ficha(
             return
     else:
         ficha[campo.value] = novo_valor
-    salvar_ficha_por_uid(uid, ficha, guilda.value, idioma.value)
+    salvar_ficha_por_uid(ficha_uid, ficha, guilda.value, idioma.value)
     await interaction.response.send_message(
         f"✅ Ficha número {numero} da guilda {guilda.value} atualizada!\nCampo **{campo.value}** corrigido para: {valor}",
         ephemeral=True
     )
-
 # =================== SERVIDORES E AVISOS (OS MESMOS DO SEU BOT, SÓ MOVA PARA CÁ) ===================... (demais comandos: adicionar_servidor, remover_servidor, atualizar_servidor, servidores, servidor, avisos, etc.)
 
 @bot.tree.command(name="adicionar_servidor", description="Adiciona ou atualiza um servidor com nome, link e foto opcional")
