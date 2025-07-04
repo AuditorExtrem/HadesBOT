@@ -92,68 +92,74 @@ class ConfirmarExclusaoView(discord.ui.View):
     async def cancelar(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(content="A exclusão da ficha original foi cancelada.", view=None)
 
-from discord import app_commands
 import discord
 import json
-import re
+import os
 
-@bot.tree.command(name="forcar_editar_numero", description="(TEMPORÁRIO) Edita o número da ficha a partir do ID da mensagem")
-@app_commands.describe(
-    mensagem_id="ID da mensagem da ficha no canal",
-    novo_numero="Novo número da ficha",
-    guilda="Selecione a guilda (hades ou hades2)",
-    idioma="Selecione o idioma (pt, en, es)"
-)
-@app_commands.choices(
-    guilda=[
-        app_commands.Choice(name="Hades", value="hades"),
-        app_commands.Choice(name="Hades 2", value="hades2"),
-    ],
-    idioma=[
-        app_commands.Choice(name="Português", value="pt"),
-        app_commands.Choice(name="Inglês", value="en"),
-        app_commands.Choice(name="Espanhol", value="es"),
-    ],
-)
-@app_commands.default_permissions(administrator=True)
-async def forcar_editar_numero(
-    interaction: discord.Interaction,
-    mensagem_id: str,
-    novo_numero: int,
-    guilda: app_commands.Choice[str],
-    idioma: app_commands.Choice[str]
-):
-    await interaction.response.defer(ephemeral=True)
-    canal = interaction.channel
+@bot.tree.command(name="reenviar_ficha_temp", description="Reenvia e salva uma ficha manualmente.")
+async def reenviar_ficha_temp(interaction: discord.Interaction):
+    user_id = 521096158324457502  # ID do usuário da ficha perdida
+
+    # Busca o usuário para avatar e mention
     try:
-        msg = await canal.fetch_message(int(mensagem_id))
-        conteudo = msg.content
-
-        # Extrair o user_id da ficha usando regex
-        user_id = "521096158324457502"  # Substitua aqui com o ID do dono da ficha
-        arquivo = arquivo_fichas(guilda.value, idioma.value)
-
-        with open(arquivo, "r", encoding="utf-8") as f:
-            fichas = json.load(f)
-
-        if user_id not in fichas:
-            await interaction.followup.send(f"❌ Nenhuma ficha encontrada para o ID `{user_id}`.")
-            return
-
-        ficha = fichas[user_id]
-        ficha["numero"] = novo_numero
-
-        with open(arquivo, "w", encoding="utf-8") as f:
-            json.dump(fichas, f, ensure_ascii=False, indent=2)
-
-        await interaction.followup.send(
-            f"✅ Número da ficha de `<@{user_id}>` atualizado com sucesso para **{novo_numero}**.",
-            ephemeral=True
-        )
+        user = await bot.fetch_user(user_id)
     except discord.NotFound:
-        await interaction.followup.send("❌ Mensagem não encontrada. Verifique se o ID está correto.", ephemeral=True)
-    except Exception as e:
-        await interaction.followup.send(f"❌ Erro inesperado: {e}", ephemeral=True)
+        await interaction.response.send_message("❌ Usuário não encontrado.", ephemeral=True)
+        return
+
+    avatar_url = user.display_avatar.url
+    mention = user.mention
+
+    # === Dados da ficha temporária ===
+    ficha_data = {
+        "roblox": "Deadpool503020",
+        "guilda": "Hades",
+        "dps": "480 oc",
+        "farm": "1,5 oc",
+        "rank": "gm+",
+        "level": 235,
+        "tempo": "40 dias",
+        "numero": 68,
+        "data": "04/07/2025"
+    }
+
+    # === Caminho do arquivo correto ===
+    json_path = "fichas_hades_pt.json"
+
+    # Carrega ou cria o arquivo de fichas
+    if os.path.exists(json_path):
+        with open(json_path, "r", encoding="utf-8") as f:
+            fichas = json.load(f)
+    else:
+        fichas = {}
+
+    # Salva ou atualiza a ficha do usuário
+    fichas[str(user_id)] = ficha_data
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(fichas, f, indent=4, ensure_ascii=False)
+
+    # Cria o embed da ficha
+    embed = discord.Embed(
+        title="🌌 Ficha de Jogador #69 – Arise Crossover 🇧🇷🌌",
+        color=discord.Color.dark_purple()
+    )
+    embed.add_field(name="🎮 Roblox", value=ficha_data["roblox"], inline=False)
+    embed.add_field(name="🏰 Guilda", value=ficha_data["guilda"], inline=False)
+    embed.add_field(name="💬 Discord", value=mention, inline=False)
+    embed.add_field(name="⚔️ DPS", value=ficha_data["dps"], inline=True)
+    embed.add_field(name="💎 Farm", value=ficha_data["farm"], inline=True)
+    embed.add_field(
+        name="📋 Outras Informações",
+        value=f"🔹 Rank: {ficha_data['rank']}\n🔹 Level: {ficha_data['level']}\n🔹 Tempo: {ficha_data['tempo']}",
+        inline=False
+    )
+    embed.set_footer(text=f"📅 Data: {ficha_data['data']}")
+    embed.set_thumbnail(url=avatar_url)
+
+    # Envia o embed e menção
+    await interaction.response.send_message(content=mention, embed=embed)
+    await interaction.response.send_message(content=mention, embed=embed)
+
 @bot.tree.command(name="duplicar_ficha", description="Duplica uma ficha existente para um novo número ou usuário (ADMIN)")
 @app_commands.describe(
     numero_antigo="Número atual da ficha",
