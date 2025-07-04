@@ -1,3 +1,190 @@
+import discord
+from discord.ext import commands, tasks
+from discord import app_commands, ui
+import json
+import os
+from datetime import datetime
+from keep_alive import keep_alive
+import pytz
+
+TOKEN = os.getenv('DISCORD_TOKEN')
+FICHAS_CANAL_ID = 1386798237163323493
+FICHAS_CANAL_HADES2_ID = 1388546663190364241
+CANAL_ARQUIVO_FICHAS_ID = 1386832198405193868
+
+NUMERO_FICHA_PADRAO = {"hades": 66, "hades2": 7}
+IDIOMAS = {
+    "pt": {"nome": "Português", "bandeira": "🇧🇷"},
+    "en": {"nome": "English", "bandeira": "🇺🇸"},
+    "es": {"nome": "Español", "bandeira": "🇪🇸"}
+}
+
+TEXTOS = {
+    "pt": {
+        "perguntas": [
+            ("🎮 Nick no Roblox:", "roblox"),
+            ("⚔️ DPS Atual:", "dps"),
+            ("💎 Farm diário de gemas:", "farm"),
+            ("🔹 Rank:", "rank"),
+            ("🔹 Level:", "level"),
+            ("🔹 Tempo de jogo:", "tempo")
+        ],
+        "confirmar_envio": "Deseja enviar essa ficha?",
+        "refazer_pergunta": "Você quer refazer a ficha?",
+        "sim": "Sim",
+        "nao": "Não",
+        "enviada": "✅ Ficha enviada com sucesso!",
+        "refazendo": "Vamos recomeçar o preenchimento da ficha!",
+        "cancelada": "Ok! Ficha não enviada. Caso queira, use /ficha novamente.",
+        "preenchida": "✅ Preenchimento da ficha concluído! Aguarde confirmação para enviar...",
+        "titulo_embed": "Confira sua ficha antes de enviar!",
+        "label_roblox": "Roblox",
+        "label_dps": "DPS",
+        "label_farm": "Farm",
+        "label_rank": "Rank",
+        "label_level": "Level",
+        "label_tempo": "Tempo",
+        "label_data": "Data"
+    },
+    "en": {
+        "perguntas": [
+            ("🎮 Roblox username:", "roblox"),
+            ("⚔️ Current DPS:", "dps"),
+            ("💎 Daily gems farm:", "farm"),
+            ("🔹 Rank:", "rank"),
+            ("🔹 Level:", "level"),
+            ("🔹 Playtime:", "tempo")
+        ],
+        "confirmar_envio": "Do you want to submit this form?",
+        "refazer_pergunta": "Do you want to redo the form?",
+        "sim": "Yes",
+        "nao": "No",
+        "enviada": "✅ Form submitted successfully!",
+        "refazendo": "Let's start filling out the form again!",
+        "cancelada": "Okay! Form not sent. If you want, use /ficha again.",
+        "preenchida": "✅ Form completed! Please confirm to submit...",
+        "titulo_embed": "Check your form before submitting!",
+        "label_roblox": "Roblox",
+        "label_dps": "DPS",
+        "label_farm": "Farm",
+        "label_rank": "Rank",
+        "label_level": "Level",
+        "label_tempo": "Playtime",
+        "label_data": "Date"
+    },
+    "es": {
+        "perguntas": [
+            ("🎮 Usuario de Roblox:", "roblox"),
+            ("⚔️ DPS actual:", "dps"),
+            ("💎 Farmeo diario de gemas:", "farm"),
+            ("🔹 Rango:", "rank"),
+            ("🔹 Nivel:", "level"),
+            ("🔹 Tiempo de juego:", "tempo")
+        ],
+        "confirmar_envio": "¿Desea enviar este formulario?",
+        "refazer_pergunta": "¿Desea rehacer el formulario?",
+        "sim": "Sí",
+        "nao": "No",
+        "enviada": "✅ ¡Ficha enviada con éxito!",
+        "refazendo": "¡Vamos a empezar de nuevo a completar la ficha!",
+        "cancelada": "¡Ok! Ficha no enviada. Si desea, use /ficha de nuevo.",
+        "preenchida": "✅ ¡Ficha completada! Por favor, confirme para enviar...",
+        "titulo_embed": "¡Revisa tu ficha antes de enviar!",
+        "label_roblox": "Roblox",
+        "label_dps": "DPS",
+        "label_farm": "Farm",
+        "label_rank": "Rango",
+        "label_level": "Nivel",
+        "label_tempo": "Tiempo de juego",
+        "label_data": "Fecha"
+    }
+}
+
+CAMPOS_EDITAVEIS = [
+    ("roblox", "Nome Roblox"),
+    ("dps", "DPS"),
+    ("farm", "Farm"),
+    ("rank", "Rank"),
+    ("level", "Level"),
+    ("tempo", "Tempo"),
+    ("data", "Data"),
+    ("discord", "Discord"),
+]
+GUILDAS = [("hades", "Hades"), ("hades2", "Hades2")]
+
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+def arquivo_fichas(guilda, idioma):
+    return f"fichas_{guilda}_{idioma}.json"
+
+def carregar_ficha(user_id, guilda, idioma):
+    arquivo = arquivo_fichas(guilda, idioma)
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            ficha = json.load(f).get(str(user_id))
+            return ficha
+    except Exception:
+        return None
+
+def carregar_ficha_por_numero(numero, guilda, idioma):
+    arquivo = arquivo_fichas(guilda, idioma)
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            todas = json.load(f)
+    except Exception:
+        return None, None
+    for uid, ficha in todas.items():
+        if ficha.get("numero") == numero:
+            return uid, ficha
+    return None, None
+
+def salvar_ficha(user_id, data, guilda, idioma):
+    arquivo = arquivo_fichas(guilda, idioma)
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            todas = json.load(f)
+    except Exception:
+        todas = {}
+    todas[str(user_id)] = data
+    with open(arquivo, "w", encoding="utf-8") as f:
+        json.dump(todas, f, indent=4, ensure_ascii=False)
+
+def salvar_ficha_por_uid(uid, ficha, guilda, idioma):
+    arquivo = arquivo_fichas(guilda, idioma)
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            todas = json.load(f)
+    except Exception:
+        todas = {}
+    todas[str(uid)] = ficha
+    with open(arquivo, "w", encoding="utf-8") as f:
+        json.dump(todas, f, indent=4, ensure_ascii=False)
+
+def remover_ficha_por_uid(uid, guilda, idioma):
+    arquivo = arquivo_fichas(guilda, idioma)
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            todas = json.load(f)
+    except Exception:
+        todas = {}
+    if uid in todas:
+        del todas[uid]
+        with open(arquivo, "w", encoding="utf-8") as f:
+            json.dump(todas, f, indent=4, ensure_ascii=False)
+
+def carregar_numero_ficha(guilda):
+    try:
+        with open(f"numero_ficha_{guilda}.json", "r", encoding="utf-8") as f:
+            return json.load(f).get("numero", NUMERO_FICHA_PADRAO[guilda])
+    except:
+        return NUMERO_FICHA_PADRAO[guilda]
+
+def salvar_numero_ficha(guilda, n):
+    with open(f"numero_ficha_{guilda}.json", "w", encoding="utf-8") as f:
+        json.dump({"numero": n}, f)
 from main_part1 import *
 
 # ====================== PARTE 2 ======================
