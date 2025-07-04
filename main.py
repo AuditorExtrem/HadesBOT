@@ -1003,7 +1003,7 @@ async def editar_aviso_2_dias(interaction: discord.Interaction, titulo: str, des
     with open(AVISOS_CONFIG, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=4)
     await interaction.response.send_message("✅ Aviso de 2 dias atualizado com sucesso!", ephemeral=True)
-)
+
 # ----------- OUTROS SLASH --------------
 @bot.tree.command(name="pingstaff", description="Envie uma mensagem anônima para o canal atual")
 @app_commands.describe(mensagem="Mensagem que será enviada no canal, sem mostrar quem enviou")
