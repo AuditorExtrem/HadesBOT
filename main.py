@@ -840,6 +840,30 @@ async def servidores_slash(interaction: discord.Interaction):
         await interaction.channel.send(embed=embed, view=view)
     await interaction.response.send_message("Lista de servidores enviada!", ephemeral=True)
 
+@bot.tree.command(name="corrigir_numero_ficha", description="Corrige o número de uma ficha já registrada.")
+@app_commands.describe(
+    usuario="Usuário que teve o número duplicado ou errado",
+    guilda="Guilda da ficha (ex: hades, hades2)",
+    novo_numero="Novo número correto para a ficha"
+)
+async def corrigir_numero_ficha(interaction: discord.Interaction, usuario: discord.Member, guilda: str, novo_numero: int):
+    guilda = guilda.lower()
+    user_id = str(usuario.id)
+
+    # Tentamos carregar a ficha (você pode ajustar o idioma padrão se quiser)
+    ficha = carregar_ficha(user_id, guilda, idioma="pt")
+
+    if not ficha:
+        await interaction.response.send_message("❌ Ficha não encontrada para esse usuário e guilda.", ephemeral=True)
+        return
+
+    ficha["numero"] = novo_numero
+    salvar_ficha(user_id, ficha, guilda, ficha.get("idioma", "pt"))
+
+    await interaction.response.send_message(
+        f"✅ Ficha de {usuario.mention} atualizada com o número **{novo_numero}** na guilda **{guilda}**.",
+        ephemeral=True
+    )
 @bot.tree.command(name="servidor", description="Mostra somente o servidor especificado")
 @app_commands.describe(nome="Nome do servidor")
 async def servidor_slash(interaction: discord.Interaction, nome: str):
