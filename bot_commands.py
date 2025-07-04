@@ -92,6 +92,73 @@ class ConfirmarExclusaoView(discord.ui.View):
     async def cancelar(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(content="A exclusão da ficha original foi cancelada.", view=None)
 
+from discord import app_commands
+import discord
+import json
+import re
+
+@bot.tree.command(name="forcar_editar_numero", description="(TEMPORÁRIO) Edita o número da ficha a partir do ID da mensagem")
+@app_commands.describe(
+    mensagem_id="ID da mensagem da ficha no canal",
+    novo_numero="Novo número da ficha",
+    guilda="Selecione a guilda (hades ou hades2)",
+    idioma="Selecione o idioma (pt, en, es)"
+)
+@app_commands.choices(
+    guilda=[
+        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="Hades 2", value="hades2"),
+    ],
+    idioma=[
+        app_commands.Choice(name="Português", value="pt"),
+        app_commands.Choice(name="Inglês", value="en"),
+        app_commands.Choice(name="Espanhol", value="es"),
+    ],
+)
+@app_commands.default_permissions(administrator=True)
+async def forcar_editar_numero(
+    interaction: discord.Interaction,
+    mensagem_id: str,
+    novo_numero: int,
+    guilda: app_commands.Choice[str],
+    idioma: app_commands.Choice[str]
+):
+    await interaction.response.defer(ephemeral=True)
+    canal = interaction.channel
+    try:
+        msg = await canal.fetch_message(int(mensagem_id))
+        conteudo = msg.content
+
+        # Extrair o user_id da ficha usando regex
+        match = re.search(r"<@?(\d{15,20})>", conteudo)
+        if not match:
+            await interaction.followup.send("❌ Não foi possível extrair o ID do usuário da mensagem.")
+            return
+
+        user_id = match.group(1)
+        arquivo = arquivo_fichas(guilda.value, idioma.value)
+
+        with open(arquivo, "r", encoding="utf-8") as f:
+            fichas = json.load(f)
+
+        if user_id not in fichas:
+            await interaction.followup.send(f"❌ Nenhuma ficha encontrada para o ID `{user_id}`.")
+            return
+
+        ficha = fichas[user_id]
+        ficha["numero"] = novo_numero
+
+        with open(arquivo, "w", encoding="utf-8") as f:
+            json.dump(fichas, f, ensure_ascii=False, indent=2)
+
+        await interaction.followup.send(
+            f"✅ Número da ficha de `<@{user_id}>` atualizado com sucesso para **{novo_numero}**.",
+            ephemeral=True
+        )
+    except discord.NotFound:
+        await interaction.followup.send("❌ Mensagem não encontrada. Verifique se o ID está correto.", ephemeral=True)
+    except Exception as e:
+        await interaction.followup.send(f"❌ Erro inesperado: {e}", ephemeral=True)
 @bot.tree.command(name="duplicar_ficha", description="Duplica uma ficha existente para um novo número ou usuário (ADMIN)")
 @app_commands.describe(
     numero_antigo="Número atual da ficha",
