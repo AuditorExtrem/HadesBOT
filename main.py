@@ -559,7 +559,24 @@ async def slash_ficha_hades2(interaction: discord.Interaction, usuario: discord.
             await interaction.response.send_message(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
         except Exception:
             await interaction.response.send_message(f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar DMs!", ephemeral=True)
+        
+@tree.command(name="editar_numero", description="Edita o número inicial das fichas da guilda.")
+@app_commands.describe(
+    guilda="Nome da guilda (ex: hades, hades2)",
+    numero="Novo número inicial das fichas"
+)
+async def editar_numero(interaction: discord.Interaction, guilda: str, numero: int):
+    guilda = guilda.lower()
 
+    if guilda not in NUMERO_FICHA_PADRAO:
+        await interaction.response.send_message(f"❌ Guilda '{guilda}' não encontrada.", ephemeral=True)
+        return
+
+    NUMERO_FICHA_PADRAO[guilda] = numero
+    await interaction.response.send_message(
+        f"✅ Número da ficha da guilda **{guilda}** foi alterado para **{numero}**.",
+        ephemeral=True
+    )
 @bot.tree.command(name="ver_ficha", description="Ver ficha de jogador")
 @app_commands.describe(numero="Número da ficha", guilda="Guilda", idioma="Idioma")
 @app_commands.choices(
@@ -986,7 +1003,7 @@ async def editar_aviso_2_dias(interaction: discord.Interaction, titulo: str, des
     with open(AVISOS_CONFIG, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=4)
     await interaction.response.send_message("✅ Aviso de 2 dias atualizado com sucesso!", ephemeral=True)
-
+)
 # ----------- OUTROS SLASH --------------
 @bot.tree.command(name="pingstaff", description="Envie uma mensagem anônima para o canal atual")
 @app_commands.describe(mensagem="Mensagem que será enviada no canal, sem mostrar quem enviou")
