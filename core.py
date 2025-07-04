@@ -16,7 +16,7 @@ CANAL_AVISOS_ID = 1380022433288949851
 CARGO_ANALISE_ID = 1379508463172063286
 CANAL_2DIAS_ID = 1379585139629228062
 CARGO_2DIAS_ID = 1379508463172063290
-NUMERO_FICHA_PADRAO = {"hades": 66, "hades2": 7}
+NUMERO_FICHA_PADRAO = {"hades": 69, "hades2": 8}
 IDIOMAS = {
     "pt": {"nome": "Português", "bandeira": "🇧🇷"},
     "en": {"nome": "English", "bandeira": "🇺🇸"},
