@@ -153,6 +153,15 @@ def carregar_ficha_por_nick(roblox, guilda, idioma):
             return uid, ficha
     return None, None
 
+def carregar_ficha_por_uid(uid, guilda, idioma):
+    arquivo = arquivo_fichas(guilda, idioma)
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            todas = json.load(f)
+        return todas.get(uid)
+    except Exception:
+        return None
+
 def salvar_ficha(user_id, data, guilda, idioma):
     arquivo = arquivo_fichas(guilda, idioma)
     try:
