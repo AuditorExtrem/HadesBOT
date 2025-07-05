@@ -96,69 +96,36 @@ import discord
 import json
 import os
 
-@bot.tree.command(name="reenviar_ficha_temp", description="Reenvia e salva uma ficha manualmente.")
-async def reenviar_ficha_temp(interaction: discord.Interaction):
-    user_id = 521096158324457502  # ID do usuário da ficha perdida
-
-    # Busca o usuário para avatar e mention
+@bot.tree.command(name="debug_fichas", description="(ADM) Ver fichas salvas da guilda/idioma selecionado")
+@app_commands.choices(
+    guilda=[
+        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="Hades 2", value="hades2"),
+    ],
+    idioma=[
+        app_commands.Choice(name="Português", value="pt"),
+        app_commands.Choice(name="Inglês", value="en"),
+        app_commands.Choice(name="Espanhol", value="es"),
+    ]
+)
+@app_commands.default_permissions(administrator=True)
+async def debug_fichas(interaction: discord.Interaction, guilda: app_commands.Choice[str], idioma: app_commands.Choice[str]):
+    arquivo = arquivo_fichas(guilda.value, idioma.value)
     try:
-        user = await bot.fetch_user(user_id)
-    except discord.NotFound:
-        await interaction.response.send_message("❌ Usuário não encontrado.", ephemeral=True)
+        with open(arquivo, "r", encoding="utf-8") as f:
+            todas = json.load(f)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Erro ao carregar: {e}", ephemeral=True)
         return
 
-    avatar_url = user.display_avatar.url
-    mention = user.mention
+    if not todas:
+        await interaction.response.send_message("📂 Nenhuma ficha encontrada nesse arquivo.", ephemeral=True)
+        return
 
-    # === Dados da ficha temporária ===
-    ficha_data = {
-        "roblox": "Deadpool503020",
-        "guilda": "Hades",
-        "dps": "480 oc",
-        "farm": "1,5 oc",
-        "rank": "gm+",
-        "level": 235,
-        "tempo": "40 dias",
-        "numero": 68,
-        "data": "04/07/2025"
-    }
-
-    # === Caminho do arquivo correto ===
-    json_path = "fichas_hades_pt.json"
-
-    # Carrega ou cria o arquivo de fichas
-    if os.path.exists(json_path):
-        with open(json_path, "r", encoding="utf-8") as f:
-            fichas = json.load(f)
-    else:
-        fichas = {}
-
-    # Salva ou atualiza a ficha do usuário
-    fichas[str(user_id)] = ficha_data
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(fichas, f, indent=4, ensure_ascii=False)
-
-    # Cria o embed da ficha
-    embed = discord.Embed(
-        title="🌌 Ficha de Jogador #69 – Arise Crossover 🇧🇷🌌",
-        color=discord.Color.dark_purple()
-    )
-    embed.add_field(name="🎮 Roblox", value=ficha_data["roblox"], inline=False)
-    embed.add_field(name="🏰 Guilda", value=ficha_data["guilda"], inline=False)
-    embed.add_field(name="💬 Discord", value=mention, inline=False)
-    embed.add_field(name="⚔️ DPS", value=ficha_data["dps"], inline=True)
-    embed.add_field(name="💎 Farm", value=ficha_data["farm"], inline=True)
-    embed.add_field(
-        name="📋 Outras Informações",
-        value=f"🔹 Rank: {ficha_data['rank']}\n🔹 Level: {ficha_data['level']}\n🔹 Tempo: {ficha_data['tempo']}",
-        inline=False
-    )
-    embed.set_footer(text=f"📅 Data: {ficha_data['data']}")
-    embed.set_thumbnail(url=avatar_url)
-
-    # Envia o embed e menção
-    await interaction.response.send_message(content=mention, embed=embed)
-    await interaction.response.send_message(content=mention, embed=embed)
+    preview = ""
+    for uid, ficha in todas.items():
+        preview += f"• {ficha.get('roblox')} #{ficha.get('numero')} (ID: {uid})\n"
+    await interaction.response.send_message(f"📝 Fichas encontradas:\n```{preview}```", ephemeral=True)
 
 @bot.tree.command(name="duplicar_ficha", description="Duplica uma ficha existente para um novo número ou usuário (ADMIN)")
 @app_commands.describe(
