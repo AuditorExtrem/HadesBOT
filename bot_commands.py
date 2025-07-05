@@ -358,8 +358,63 @@ class ViewSelecaoFicha(ui.View):
                 self.idioma
             )
         )
-class ViewEditarCampoFicha(ui.View): def init(self, uid, ficha, guilda, idioma): super().init(timeout=60) self.uid = uid self.ficha = ficha self.guilda = guilda self.idioma = idioma options = [ discord.SelectOption(label=label, value=campo) for campo, label in CAMPOS_EDITAVEIS ] self.select = ui.Select(placeholder="Escolha o campo para editar", options=options) self.select.callback = self.selecionar_campo self.add_item(self.select)
+class ViewEditarCampoFicha(ui.View):
+    def __init__(self, uid, ficha, guilda, idioma):
+        super().__init__(timeout=60)
+        self.uid = uid
+        self.ficha = ficha
+        self.guilda = guilda
+        self.idioma = idioma
 
+        options = [
+            discord.SelectOption(label=label, value=campo)
+            for campo, label in CAMPOS_EDITAVEIS
+        ]
+
+        self.select = ui.Select(
+            placeholder="Escolha o campo para editar",
+            options=options
+        )
+        self.select.callback = self.selecionar_campo
+        self.add_item(self.select)
+
+    async def selecionar_campo(self, interaction: Interaction):
+        self.campo = self.select.values[0]
+        await interaction.response.send_message(
+            f"✏️ Digite o novo valor para o campo **{self.campo}**:",
+            ephemeral=True
+        )
+
+        def check(msg):
+            return msg.author == interaction.user and msg.channel == interaction.channel
+
+        try:
+            msg = await interaction.client.wait_for("message", timeout=120, check=check)
+            valor = msg.content.strip()
+
+            if self.campo == "numero":
+                try:
+                    valor = int(valor)
+                except:
+                    await interaction.followup.send("❌ Valor inválido. Use apenas números inteiros.", ephemeral=True)
+                    return
+                self.ficha["numero"] = valor
+            elif self.campo == "discord":
+                if valor.startswith("<@") and valor.endswith(">"):
+                    valor = valor.replace("<@", "").replace(">", "").replace("!", "")
+                self.ficha["discord"] = valor
+            else:
+                self.ficha[self.campo] = valor
+
+            salvar_ficha_por_uid(self.uid, self.ficha, self.guilda, self.idioma)
+
+            await interaction.followup.send(
+                f"✅ Ficha de **{self.ficha['roblox']}** atualizada com sucesso! Campo **{self.campo}** alterado.",
+                ephemeral=True
+            )
+
+        except Exception:
+            await interaction.followup.send("⏱️ Tempo esgotado. Tente novamente.", ephemeral=True)
 async def selecionar_campo(self, interaction: Interaction):
     self.campo = self.select.values[0]
     await interaction.response.send_message(f"✏️ Digite o novo valor para o campo **{self.campo}**:", ephemeral=True)
