@@ -222,6 +222,7 @@ async def duplicar_ficha(
     )
     view = ConfirmarExclusaoView(arquivo, user_id_antigo)
     await interaction.response.send_message(mensagem, view=view, ephemeral=True)
+
 @bot.tree.command(name="ver_ficha", description="Ver ficha de jogador")
 @app_commands.describe(numero="Número da ficha", guilda="Guilda", idioma="Idioma")
 @app_commands.choices(
@@ -316,15 +317,51 @@ async def minha_ficha(
         embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
     await interaction.response.send_message(embed=embed, ephemeral=True) 
 
-@bot.tree.command(name="editar_ficha", description="Editar uma informação específica da ficha (ADM)")
+from discord import ui, Interaction import discord import json
+
+class ViewSelecaoFicha(ui.View): def init(self, fichas, guilda, idioma): super().init(timeout=60) self.guilda = guilda self.idioma = idioma options = [ discord.SelectOption( label=ficha['roblox'], description=f"Ficha #{ficha['numero']} - {ficha.get('rank', '')}", value=uid ) for uid, ficha in fichas.items() ] self.select = ui.Select(placeholder="Selecione uma ficha para editar", options=options, min_values=1, max_values=1) self.select.callback = self.selecionar_ficha self.add_item(self.select)
+
+async def selecionar_ficha(self, interaction: Interaction):
+    self.uid_escolhido = self.select.values[0]
+    self.ficha_escolhida = carregar_ficha_por_uid(self.uid_escolhido, self.guilda, self.idioma)
+    await interaction.response.edit_message(content=f"📄 Ficha de **{self.ficha_escolhida['roblox']}** selecionada com sucesso! Escolha o campo a editar:", view=ViewEditarCampoFicha(self.uid_escolhido, self.ficha_escolhida, self.guilda, self.idioma))
+
+class ViewEditarCampoFicha(ui.View): def init(self, uid, ficha, guilda, idioma): super().init(timeout=60) self.uid = uid self.ficha = ficha self.guilda = guilda self.idioma = idioma options = [ discord.SelectOption(label=label, value=campo) for campo, label in CAMPOS_EDITAVEIS ] self.select = ui.Select(placeholder="Escolha o campo para editar", options=options) self.select.callback = self.selecionar_campo self.add_item(self.select)
+
+async def selecionar_campo(self, interaction: Interaction):
+    self.campo = self.select.values[0]
+    await interaction.response.send_message(f"✏️ Digite o novo valor para o campo **{self.campo}**:", ephemeral=True)
+
+    def check(msg):
+        return msg.author == interaction.user and msg.channel == interaction.channel
+
+    try:
+        msg = await interaction.client.wait_for("message", timeout=120, check=check)
+        valor = msg.content.strip()
+        if self.campo == "numero":
+            try:
+                valor = int(valor)
+            except:
+                await interaction.followup.send("❌ Valor inválido. Use apenas números inteiros.", ephemeral=True)
+                return
+            self.ficha["numero"] = valor
+        elif self.campo == "discord":
+            if valor.startswith("<@") and valor.endswith(">"):
+                valor = valor.replace("<@", "").replace(">", "").replace("!", "")
+            self.ficha["discord"] = valor
+        else:
+            self.ficha[self.campo] = valor
+
+        salvar_ficha_por_uid(self.uid, self.ficha, self.guilda, self.idioma)
+        await interaction.followup.send(f"✅ Ficha de **{self.ficha['roblox']}** atualizada com sucesso! Campo **{self.campo}** alterado.", ephemeral=True)
+
+    except Exception as e:
+        await interaction.followup.send(f"⏱️ Tempo esgotado. Tente novamente.", ephemeral=True)
+
+@bot.tree.command(name="editar_ficha", description="Editar uma ficha via menu interativo")
 @app_commands.describe(
-    numero="(Opcional) Número da ficha",
-    roblox="(Opcional) Nick no Roblox",
-    guilda="Selecione a guilda (hades ou hades2)",
-    idioma="Selecione o idioma (pt, en, es)",
-    campo="Campo a editar",
-    valor="Novo valor (se campo for Discord, marque o usuário)",
-    user_id="(Opcional) Discord ID do usuário dono da ficha"
+    guilda="Selecione a guilda",
+    idioma="Selecione o idioma"
 )
 @app_commands.choices(
     guilda=[
@@ -335,97 +372,27 @@ async def minha_ficha(
         app_commands.Choice(name="Português", value="pt"),
         app_commands.Choice(name="Inglês", value="en"),
         app_commands.Choice(name="Espanhol", value="es"),
-    ],
-    campo=[
-        app_commands.Choice(name=label, value=campo) for campo, label in CAMPOS_EDITAVEIS
     ]
 )
 @app_commands.default_permissions(administrator=True)
-async def editar_ficha(
-    interaction: discord.Interaction,
-    numero: int = None,
-    roblox: str = None,
-    guilda: app_commands.Choice[str] = None,
-    idioma: app_commands.Choice[str] = None,
-    campo: app_commands.Choice[str] = None,
-    valor: str = None,
-    user_id: str = None
-):
-    ficha_uid = None
-    ficha = None
+async def editar_ficha(interaction: discord.Interaction, guilda: app_commands.Choice[str], idioma: app_commands.Choice[str]):
     arquivo = arquivo_fichas(guilda.value, idioma.value)
-
     try:
         with open(arquivo, "r", encoding="utf-8") as f:
             todas = json.load(f)
     except Exception:
-        todas = {}
-
-    # 1. Se user_id for passado, tenta direto
-    if user_id and user_id in todas:
-        if not numero or todas[user_id].get("numero") == numero:
-            ficha_uid = user_id
-            ficha = todas[user_id]
-
-    # 2. Se não encontrou, tenta por nick do roblox
-    if ficha is None and roblox:
-        ficha_uid, ficha = carregar_ficha_por_nick(roblox, guilda.value, idioma.value)
-        if numero and ficha and ficha.get("numero") != numero:
-            ficha = None
-            ficha_uid = None
-
-    # 3. Se ainda não achou, tenta por número
-    if ficha is None and numero is not None:
-        for uid, ficha_data in todas.items():
-            if ficha_data.get("numero") == numero:
-                ficha_uid = uid
-                ficha = ficha_data
-                break
-
-    if not ficha:
-        await interaction.response.send_message("❌ Ficha não encontrada. Verifique os parâmetros informados.", ephemeral=True)
+        await interaction.response.send_message("❌ Erro ao carregar as fichas.", ephemeral=True)
         return
 
-    novo_valor = valor
-    if campo.value == "discord":
-        if valor.startswith("<@") and valor.endswith(">"):
-            novo_valor = valor.replace("<@", "").replace(">", "").replace("!", "")
-        elif valor.isdigit():
-            novo_valor = valor
-    elif campo.value == "numero":
-        try:
-            novo_numero = int(valor)
-            ficha["numero"] = novo_numero
-        except Exception:
-            await interaction.response.send_message("❌ Valor inválido para número! Use apenas números inteiros.", ephemeral=True)
-            return
-    else:
-        ficha[campo.value] = novo_valor
-
-    salvar_ficha_por_uid(ficha_uid, ficha, guilda.value, idioma.value)
+    if not todas:
+        await interaction.response.send_message("⚠️ Nenhuma ficha registrada encontrada.", ephemeral=True)
+        return
 
     await interaction.response.send_message(
-        f"✅ Ficha atualizada com sucesso!\nID: `{ficha_uid}`\nCampo **{campo.value}** → `{valor}`",
+        "📋 Selecione qual ficha deseja editar:",
+        view=ViewSelecaoFicha(todas, guilda.value, idioma.value),
         ephemeral=True
     )
-# =================== SERVIDORES E AVISOS (OS MESMOS DO SEU BOT, SÓ MOVA PARA CÁ) ===================... (demais comandos: adicionar_servidor, remover_servidor, atualizar_servidor, servidores, servidor, avisos, etc.)
-
-@bot.tree.command(name="adicionar_servidor", description="Adiciona ou atualiza um servidor com nome, link e foto opcional")
-@app_commands.describe(nome="Nome do servidor", link="Link do servidor", membro="(Opcional) Membro para foto/autor")
-async def adicionar_servidor(interaction: discord.Interaction, nome: str, link: str, membro: discord.Member = None):
-    servidores = carregar_servidores()
-    autor_id = membro.id if membro else None
-    for servidor in servidores:
-        if servidor['nome'].lower() == nome.lower():
-            servidor['link'] = link
-            servidor['autor_id'] = autor_id
-            salvar_servidores(servidores)
-            await interaction.response.send_message(f"🔁 Servidor **{nome}** atualizado!", ephemeral=True)
-            return
-    servidores.append({'nome': nome, 'link': link, 'autor_id': autor_id})
-    salvar_servidores(servidores)
-    await interaction.response.send_message(f"✅ Servidor **{nome}** adicionado com sucesso!", ephemeral=True)
-
 @bot.tree.command(name="remover_servidor", description="Remove um servidor salvo pelo nome")
 @app_commands.describe(nome="Nome do servidor")
 async def remover_servidor(interaction: discord.Interaction, nome: str):
