@@ -317,15 +317,47 @@ async def minha_ficha(
         embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
     await interaction.response.send_message(embed=embed, ephemeral=True) 
 
-from discord import ui, Interaction import discord import json
+import discord
+from discord import ui, Interaction
+import json
 
-class ViewSelecaoFicha(ui.View): def init(self, fichas, guilda, idioma): super().init(timeout=60) self.guilda = guilda self.idioma = idioma options = [ discord.SelectOption( label=ficha['roblox'], description=f"Ficha #{ficha['numero']} - {ficha.get('rank', '')}", value=uid ) for uid, ficha in fichas.items() ] self.select = ui.Select(placeholder="Selecione uma ficha para editar", options=options, min_values=1, max_values=1) self.select.callback = self.selecionar_ficha self.add_item(self.select)
+class ViewSelecaoFicha(ui.View):
+    def __init__(self, fichas, guilda, idioma):
+        super().__init__(timeout=60)
+        self.guilda = guilda
+        self.idioma = idioma
 
-async def selecionar_ficha(self, interaction: Interaction):
-    self.uid_escolhido = self.select.values[0]
-    self.ficha_escolhida = carregar_ficha_por_uid(self.uid_escolhido, self.guilda, self.idioma)
-    await interaction.response.edit_message(content=f"📄 Ficha de **{self.ficha_escolhida['roblox']}** selecionada com sucesso! Escolha o campo a editar:", view=ViewEditarCampoFicha(self.uid_escolhido, self.ficha_escolhida, self.guilda, self.idioma))
+        options = [
+            discord.SelectOption(
+                label=ficha['roblox'],
+                description=f"Ficha #{ficha['numero']} - {ficha.get('rank', '')}",
+                value=uid
+            )
+            for uid, ficha in fichas.items()
+        ]
 
+        self.select = ui.Select(
+            placeholder="Selecione uma ficha para editar",
+            options=options,
+            min_values=1,
+            max_values=1
+        )
+        self.select.callback = self.selecionar_ficha
+        self.add_item(self.select)
+
+    async def selecionar_ficha(self, interaction: Interaction):
+        self.uid_escolhido = self.select.values[0]
+        self.ficha_escolhida = carregar_ficha_por_uid(self.uid_escolhido, self.guilda, self.idioma)
+
+        await interaction.response.edit_message(
+            content=f"📄 Ficha de **{self.ficha_escolhida['roblox']}** selecionada com sucesso! Escolha o campo a editar:",
+            view=ViewEditarCampoFicha(
+                self.uid_escolhido,
+                self.ficha_escolhida,
+                self.guilda,
+                self.idioma
+            )
+        )
 class ViewEditarCampoFicha(ui.View): def init(self, uid, ficha, guilda, idioma): super().init(timeout=60) self.uid = uid self.ficha = ficha self.guilda = guilda self.idioma = idioma options = [ discord.SelectOption(label=label, value=campo) for campo, label in CAMPOS_EDITAVEIS ] self.select = ui.Select(placeholder="Escolha o campo para editar", options=options) self.select.callback = self.selecionar_campo self.add_item(self.select)
 
 async def selecionar_campo(self, interaction: Interaction):
