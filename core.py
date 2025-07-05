@@ -140,6 +140,18 @@ def carregar_ficha_por_numero(numero, guilda, idioma):
         if ficha.get("numero") == numero:
             return uid, ficha
     return None, None
+    
+def carregar_ficha_por_nick(roblox, guilda, idioma):
+    arquivo = arquivo_fichas(guilda, idioma)
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            todas = json.load(f)
+    except Exception:
+        return None, None
+    for uid, ficha in todas.items():
+        if ficha.get("roblox", "").lower() == roblox.lower():
+            return uid, ficha
+    return None, None
 
 def salvar_ficha(user_id, data, guilda, idioma):
     arquivo = arquivo_fichas(guilda, idioma)
