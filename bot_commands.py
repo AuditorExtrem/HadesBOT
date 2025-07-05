@@ -318,7 +318,8 @@ async def minha_ficha(
 
 @bot.tree.command(name="editar_ficha", description="Editar uma informação específica da ficha (ADM)")
 @app_commands.describe(
-    numero="Número da ficha",
+    numero="(Opcional) Número da ficha",
+    roblox="(Opcional) Nick no Roblox",
     guilda="Selecione a guilda (hades ou hades2)",
     idioma="Selecione o idioma (pt, en, es)",
     campo="Campo a editar",
@@ -342,38 +343,47 @@ async def minha_ficha(
 @app_commands.default_permissions(administrator=True)
 async def editar_ficha(
     interaction: discord.Interaction,
-    numero: int,
-    guilda: app_commands.Choice[str],
-    idioma: app_commands.Choice[str],
-    campo: app_commands.Choice[str],
-    valor: str,
-    user_id: str = None   # Novo campo opcional!
+    numero: int = None,
+    roblox: str = None,
+    guilda: app_commands.Choice[str] = None,
+    idioma: app_commands.Choice[str] = None,
+    campo: app_commands.Choice[str] = None,
+    valor: str = None,
+    user_id: str = None
 ):
-    # Busca precisa: se user_id fornecido, edita exatamente a ficha desse user com esse número
     ficha_uid = None
     ficha = None
     arquivo = arquivo_fichas(guilda.value, idioma.value)
+
     try:
         with open(arquivo, "r", encoding="utf-8") as f:
             todas = json.load(f)
     except Exception:
         todas = {}
+
+    # 1. Se user_id for passado, tenta direto
     if user_id and user_id in todas:
-        if todas[user_id].get("numero") == numero:
+        if not numero or todas[user_id].get("numero") == numero:
             ficha_uid = user_id
             ficha = todas[user_id]
-    if ficha is None:
-        # Busca padrão: primeiro que bater o número
+
+    # 2. Se não encontrou, tenta por nick do roblox
+    if ficha is None and roblox:
+        ficha_uid, ficha = carregar_ficha_por_nick(roblox, guilda.value, idioma.value)
+        if numero and ficha and ficha.get("numero") != numero:
+            ficha = None
+            ficha_uid = None
+
+    # 3. Se ainda não achou, tenta por número
+    if ficha is None and numero is not None:
         for uid, ficha_data in todas.items():
             if ficha_data.get("numero") == numero:
                 ficha_uid = uid
                 ficha = ficha_data
-                # Se user_id foi passado mas não bateu, continua procurando normalmente
-                if user_id and uid != user_id:
-                    continue
                 break
+
     if not ficha:
-        await interaction.response.send_message("❌ Ficha não encontrada.", ephemeral=True)
+        await interaction.response.send_message("❌ Ficha não encontrada. Verifique os parâmetros informados.", ephemeral=True)
         return
 
     novo_valor = valor
@@ -391,9 +401,11 @@ async def editar_ficha(
             return
     else:
         ficha[campo.value] = novo_valor
+
     salvar_ficha_por_uid(ficha_uid, ficha, guilda.value, idioma.value)
+
     await interaction.response.send_message(
-        f"✅ Ficha número {numero} da guilda {guilda.value} atualizada!\nCampo **{campo.value}** corrigido para: {valor}",
+        f"✅ Ficha atualizada com sucesso!\nID: `{ficha_uid}`\nCampo **{campo.value}** → `{valor}`",
         ephemeral=True
     )
 # =================== SERVIDORES E AVISOS (OS MESMOS DO SEU BOT, SÓ MOVA PARA CÁ) ===================... (demais comandos: adicionar_servidor, remover_servidor, atualizar_servidor, servidores, servidor, avisos, etc.)
