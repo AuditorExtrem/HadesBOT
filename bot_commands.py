@@ -92,49 +92,90 @@ class ConfirmarExclusaoView(discord.ui.View):
     async def cancelar(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(content="A exclusão da ficha original foi cancelada.", view=None)
 
-@bot.tree.command(name="fichas", description="Mostra todas as fichas salvas em ordem.")
-@app_commands.describe(guilda="Selecione a guilda", idioma="Selecione o idioma")
-@app_commands.choices(
-    guilda=[
-        app_commands.Choice(name="Hades", value="hades"),
-        app_commands.Choice(name="Hades 2", value="hades2")
-    ],
-    idioma=[
-        app_commands.Choice(name="Português", value="pt"),
-        app_commands.Choice(name="Inglês", value="en"),
-        app_commands.Choice(name="Espanhol", value="es")
-    ]
-)
-async def fichas(interaction: discord.Interaction, guilda: app_commands.Choice[str], idioma: app_commands.Choice[str]):
-    arquivo = arquivo_fichas(guilda.value, idioma.value)
-    try:
-        with open(arquivo, "r", encoding="utf-8") as f:
-            fichas = json.load(f)
-    except Exception:
-        await interaction.response.send_message("❌ Não foi possível carregar o arquivo de fichas.", ephemeral=True)
-        return
+import discord
+from discord import app_commands
+import os
+import json
 
-    if not fichas:
-        await interaction.response.send_message("❌ Nenhuma ficha registrada.", ephemeral=True)
-        return
+PASTA_FICHAS = "fichas"  # Caminho raiz onde estão as pastas
 
-    fichas_ordenadas = sorted(fichas.values(), key=lambda f: f.get("numero", 0))
-    embed = discord.Embed(
-        title=f"📋 Fichas Salvas – {guilda.name} ({idioma.name})",
-        description=f"Total: {len(fichas_ordenadas)} fichas",
-        color=discord.Color.blue()
-    )
+class MeuBot(discord.Client):
+    def __init__(self):
+        intents = discord.Intents.default()
+        intents.members = True
+        intents.message_content = True
+        super().__init__(intents=intents)
+        self.tree = app_commands.CommandTree(self)
 
-    for ficha in fichas_ordenadas:
-        numero = ficha.get("numero", "-")
-        roblox = ficha.get("roblox", "-")
-        discord_id = ficha.get("discord", "-")
-        data = ficha.get("data", "-")
-        linha = f"👤 <@{discord_id}> | 🎮 `{roblox}` | 📅 `{data}`"
-        embed.add_field(name=f"Ficha #{numero}", value=linha, inline=False)
+    async def setup_hook(self):
+        await self.tree.sync()
 
-    await interaction.response.send_message(embed=embed, ephemeral=True)
+bot = MeuBot()
 
+@bot.tree.command(name="enviar_fichas", description="Envia todas as fichas em ordem numérica")
+async def enviar_fichas(interaction: discord.Interaction):
+    await interaction.response.defer(thinking=True)
+
+    todas_fichas = []
+
+    for root, dirs, files in os.walk(PASTA_FICHAS):
+        for file in files:
+            if file.endswith(".json"):
+                caminho = os.path.join(root, file)
+                try:
+                    with open(caminho, "r", encoding="utf-8") as f:
+                        ficha = json.load(f)
+                        ficha["_origem_arquivo"] = file
+                        todas_fichas.append(ficha)
+                except Exception as e:
+                    await interaction.channel.send(f"❌ Erro ao carregar `{file}`: {e}")
+
+    # Ordena por ID numérico
+    todas_fichas.sort(key=lambda f: f.get("id", 0))
+
+    enviados = 0
+
+    for ficha in todas_fichas:
+        try:
+            embed = discord.Embed(
+                title=f"📜 Ficha de Jogador #{ficha['id']} – Arise Crossover",
+                color=discord.Color.purple()
+            )
+            embed.add_field(name="🎮 Roblox", value=ficha.get("roblox", "N/A"), inline=True)
+            embed.add_field(name="🏰 Guilda", value=ficha.get("guilda", "N/A"), inline=True)
+
+            discord_id = ficha.get("discord_id")
+            avatar_url = None
+
+            if discord_id and str(discord_id).isdigit():
+                try:
+                    user = await bot.fetch_user(int(discord_id))
+                    embed.add_field(name="💬 Discord", value=f"<@{discord_id}>", inline=False)
+                    avatar_url = user.display_avatar.url
+                except:
+                    embed.add_field(name="💬 Discord", value="❌ ID inválido ou não encontrado", inline=False)
+            else:
+                embed.add_field(name="💬 Discord", value="❌ ID ausente", inline=False)
+
+            embed.add_field(name="⚔️ DPS", value=ficha.get("dps", "N/A"), inline=True)
+            embed.add_field(name="💎 Farm", value=ficha.get("farm", "N/A"), inline=True)
+            embed.add_field(
+                name="📚 Outras Informações",
+                value=f"🔹 Rank: {ficha.get('rank', 'N/A')}\n🔹 Level: {ficha.get('level', 'N/A')}\n🔹 Tempo: {ficha.get('tempo', 'N/A')}",
+                inline=False
+            )
+
+            embed.set_footer(text=f"Arquivo: {ficha['_origem_arquivo']}")
+            if avatar_url:
+                embed.set_thumbnail(url=avatar_url)
+
+            await interaction.channel.send(embed=embed)
+            enviados += 1
+
+        except Exception as e:
+            await interaction.channel.send(f"❌ Erro ao enviar ficha #{ficha.get('id', '?')}: {e}")
+
+    await interaction.followup.send(f"✅ {enviados} fichas enviadas em ordem numérica.")
 @bot.tree.command(name="todas_fichas", description="Mostra todas as fichas salvas de todas as guildas e idiomas.")
 async def todas_fichas(interaction: discord.Interaction):
     import os
