@@ -97,104 +97,154 @@ import asyncio
 import discord
 from discord import app_commands
 
-def bandeira_por_codigo(codigo):
+# ───── Helpers ──────────────────────────────────────────────
+def flag_by_lang(lang: str) -> str:
+    """Devolve o emoji da bandeira pelo código de idioma."""
     return {
         "pt": "🇧🇷",
         "en": "🇺🇸",
         "es": "🇪🇸",
-    }.get(codigo, "")
+    }.get(lang.lower(), "")
 
-@bot.tree.command(name="enviar_fichas", description="Envia todas as fichas em ordem numérica.")
-async def enviar_fichas(interaction: discord.Interaction):
+def get_value(d: dict, *aliases, default="N/A"):
+    """Pega o primeiro campo existente (case-insensitive) dentre os aliases."""
+    lower = {k.lower(): v for k, v in d.items()}
+    for key in aliases:
+        if key.lower() in lower:
+            return lower[key.lower()]
+    return default
+
+# ───── Comando /enviar_fichas ───────────────────────────────
+@bot.tree.command(
+    name="enviar_fichas",
+    description="Envia todas as fichas em ordem numérica."
+)
+async def enviar_fichas(interaction: discord.Interaction) -> None:
     try:
         await interaction.response.defer(thinking=True)
     except discord.NotFound:
         await interaction.channel.send("Interação expirou. Tente novamente.")
         return
 
-    arquivos_fichas = [
-        "fichas_hades_pt.json",
-        "fichas_hades_en.json",
-        "fichas_hades_es.json",
-        "fichas_hades2_pt.json",
-        "fichas_hades2_en.json",
-        "fichas_hades2_es.json",
+    arquivos = [
+        "fichas_hades_pt.json",  "fichas_hades_en.json",  "fichas_hades_es.json",
+        "fichas_hades2_pt.json", "fichas_hades2_en.json", "fichas_hades2_es.json",
     ]
 
-    todas_fichas = []
+    fichas: list[dict] = []
     erros_leitura = 0
 
-    for nome in arquivos_fichas:
+    # ── Lê todas as fichas de cada arquivo ──
+    for nome in arquivos:
         try:
-            with open(nome, "r", encoding="utf-8") as f:
-                ficha = json.load(f)
-                ficha["_origem_arquivo"] = nome
+            with open(nome, encoding="utf-8") as f:
+                dados = json.load(f)
 
-                # Extrair o código do idioma do nome do arquivo
-                codigo_idioma = None
-                partes = nome.split("_")
-                if partes:
-                    ultimo = partes[-1]  # ex: pt.json
-                    codigo_idioma = ultimo.split(".")[0]  # ex: pt
+            # Lista direta, dict com chave-lista ou dict cujos valores são fichas
+            if isinstance(dados, list):
+                lista = dados
+            elif isinstance(dados, dict):
+                lista = (
+                    dados.get("fichas")
+                    or dados.get("players")
+                    or dados.get("lista")
+                    or (list(dados.values()) if all(isinstance(v, dict) for v in dados.values()) else [dados])
+                )
+            else:
+                lista = []
 
-                ficha["_codigo_idioma"] = codigo_idioma
-                todas_fichas.append(ficha)
+            for ficha in lista:
+                if not isinstance(ficha, dict):
+                    continue
+                ficha["_lang"] = get_value(
+                    ficha, "idioma",
+                    default=nome.split("_")[-1].split(".")[0]   # pt / en / es
+                )
+                fichas.append(ficha)
 
         except Exception as e:
             erros_leitura += 1
-            await interaction.followup.send(f"Erro lendo `{nome}`: `{e}`", ephemeral=True)
+            await interaction.followup.send(f"Erro lendo `{nome}`: {e}", ephemeral=True)
 
-    todas_fichas.sort(key=lambda f: int(f.get("id", 0)) if str(f.get("id")).isdigit() else 0)
+    # ── Ordena pelo número / id ──
+    fichas.sort(
+        key=lambda f: int(str(get_value(f, "numero", "id", default=0)).strip() or 0)
+    )
 
+    # ── Envia um embed por ficha ──
     enviados = 0
-    for ficha in todas_fichas:
+    for ficha in fichas:
         try:
-            flag = bandeira_por_codigo(ficha.get("_codigo_idioma", ""))
-            titulo = f"🌌 Ficha de Jogador #{ficha.get('id', '??')} – Arise Crossover {flag} 🌌"
+            flag   = flag_by_lang(ficha.get("_lang", ""))
+            numero = get_value(ficha, "numero", "id", default="??")
+            titulo = f"🌌 Ficha de Jogador #{numero} – Arise Crossover {flag} 🌌"
 
             embed = discord.Embed(title=titulo, color=discord.Color.purple())
 
-            embed.add_field(name="🎮 Usuário no Roblox", value=ficha.get("roblox", "N/A"), inline=True)
-            embed.add_field(name="🏰 Guilda atual", value=ficha.get("guilda", "N/A"), inline=True)
+            embed.add_field(
+                name="🎮 Usuário no Roblox",
+                value=get_value(ficha, "roblox"),
+                inline=True,
+            )
+            embed.add_field(
+                name="🏰 Guilda atual",
+                value=get_value(ficha, "guilda"),
+                inline=True,
+            )
 
-            discord_id = str(ficha.get("discord_id", "")).strip()
+            discord_id = str(get_value(ficha, "discord", "discord_id", default="")).strip()
             if discord_id.isdigit():
                 try:
                     user = await interaction.client.fetch_user(int(discord_id))
                     embed.set_thumbnail(url=user.display_avatar.url)
-                    embed.add_field(name="💬 Discord", value=f"<@{discord_id}>", inline=False)
+                    embed.add_field(
+                        name="💬 Discord",
+                        value=f"<@{discord_id}>",
+                        inline=False,
+                    )
                 except discord.NotFound:
                     embed.add_field(name="💬 Discord", value="ID não encontrado", inline=False)
             else:
                 embed.add_field(name="💬 Discord", value="ID ausente ou inválido", inline=False)
 
-            embed.add_field(name="⚔️ DPS Atual", value=ficha.get("dps", "N/A"), inline=True)
-            embed.add_field(name="💎 Farm de Gemas Diárias (média)", value=ficha.get("farm", "N/A"), inline=True)
-
-            outras_info = (
-                f"🔹 Rank: {ficha.get('rank', 'N/A')}\n"
-                f"🔹 Level: {ficha.get('level', 'N/A')}\n"
-                f"🔹 Tempo de jogo: {ficha.get('tempo', 'N/A')}"
+            embed.add_field(
+                name="⚔️ DPS Atual",
+                value=get_value(ficha, "dps"),
+                inline=True,
             )
-            embed.add_field(name="📊 Outras Informações", value=outras_info, inline=False)
+            embed.add_field(
+                name="💎 Farm de Gemas Diárias",
+                value=get_value(ficha, "farm"),
+                inline=True,
+            )
 
-            # Se quiser exibir data, assumindo que tenha o campo 'data' no json
-            if ficha.get("data"):
-                embed.add_field(name="📆 Data da ficha", value=ficha.get("data"), inline=False)
+            outras = (
+                f"🔹 Rank: {get_value(ficha, 'rank')}\n"
+                f"🔹 Level: {get_value(ficha, 'level')}\n"
+                f"🔹 Tempo de jogo: {get_value(ficha, 'tempo')}"
+            )
+            embed.add_field(name="📊 Outras Informações", value=outras, inline=False)
 
-            embed.set_footer(text=f"Arquivo: {ficha['_origem_arquivo']}")
+            data_ficha = get_value(ficha, "data", default=None)
+            if data_ficha:
+                embed.add_field(name="📆 Data da ficha", value=data_ficha, inline=False)
 
             await interaction.followup.send(embed=embed)
             enviados += 1
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.5)  # evita rate-limit
 
         except Exception as e:
-            await interaction.followup.send(f"Erro ao enviar ficha #{ficha.get('id', '?')}: {e}", ephemeral=True)
+            await interaction.followup.send(
+                f"Erro ao enviar ficha {numero}: {e}",
+                ephemeral=True,
+            )
 
-    await interaction.followup.send(
-        f"{enviados} fichas enviadas."
-        + (f" ({erros_leitura} com erro de leitura)" if erros_leitura else "")
-    )
+    resumo = f"{enviados} fichas enviadas."
+    if erros_leitura:
+        resumo += f" ({erros_leitura} erro(s) de leitura)"
+    await interaction.followup.send(resumo)
+    await interaction.followup.send(f"{enviados} fichas enviadas." + (f" ({erros} erro(s) de leitura)" if erros else ""))
+
 @bot.tree.command(name="todas_fichas", description="Mostra todas as fichas salvas de todas as guildas e idiomas.")
 async def todas_fichas(interaction: discord.Interaction):
     import os
