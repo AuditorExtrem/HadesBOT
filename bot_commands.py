@@ -96,77 +96,59 @@ import discord
 from discord import app_commands
 import os
 import json
-import asyncio   # ← usaremos para um sleep rápido entre mensagens
+import asyncio
 
-PASTA_FICHAS = "fichas"  # Pasta raiz das subpastas
-DELAY = 0.5              # Ajuste se precisar diminuir a chance de rate-limit
-
-class MeuBot(discord.Client):
-    def __init__(self):
-        intents = discord.Intents.default()
-        intents.members = True
-        intents.message_content = True
-        super().__init__(intents=intents)
-        self.tree = app_commands.CommandTree(self)
-
-    async def setup_hook(self):
-        await self.tree.sync()
-
-bot = MeuBot()
+PASTA_FICHAS = "fichas"  # 📁 Caminho base onde estão as pastas com as fichas
 
 @bot.tree.command(
     name="enviar_fichas",
-    description="Envia todas as fichas (JSON) de todas as pastas, ordenadas pelo ID numérico."
+    description="Envia todas as fichas (JSON) de todas as pastas, em ordem numérica."
 )
 async def enviar_fichas(interaction: discord.Interaction):
-    # 1) Reserva a resposta; dá até 15 min para terminar
-    await interaction.response.defer(thinking=True)
+    # ⏳ Defer para evitar erro de timeout da interação
+    try:
+        await interaction.response.defer(thinking=True)
+    except discord.NotFound:
+        await interaction.channel.send("❌ Interação expirou. Tente novamente.")
+        return
 
     todas_fichas = []
     erros_leitura = 0
 
-    # 2) Percorre recursivamente todas as sub-pastas
+    # 🔍 Percorre recursivamente todas as subpastas
     for root, _, files in os.walk(PASTA_FICHAS):
         for file in files:
-            if not file.endswith(".json"):
-                continue
-            caminho = os.path.join(root, file)
+            if file.endswith(".json"):
+                caminho = os.path.join(root, file)
+                try:
+                    with open(caminho, "r", encoding="utf-8") as f:
+                        ficha = json.load(f)
+                        ficha["_origem_arquivo"] = os.path.relpath(caminho, PASTA_FICHAS)
+                        todas_fichas.append(ficha)
+                except Exception as e:
+                    erros_leitura += 1
+                    await interaction.followup.send(f"❌ Erro lendo `{file}`: `{e}`", ephemeral=True)
 
-            try:
-                with open(caminho, "r", encoding="utf-8") as f:
-                    ficha = json.load(f)
-                    ficha["_origem_arquivo"] = os.path.relpath(caminho, PASTA_FICHAS)
-                    todas_fichas.append(ficha)
-            except Exception as e:
-                erros_leitura += 1
-                await interaction.followup.send(
-                    f"❌ Erro ao ler `{file}`: `{e}`\n(Caminho: `{caminho}`)",
-                    ephemeral=True
-                )
-
-    # 3) Ordena; se não houver ID ou não for número, assume 0 (fica no início)
-    todas_fichas.sort(key=lambda f: int(f.get("id", 0)) if str(f.get("id", "0")).isdigit() else 0)
+    # 🔢 Ordena por ID numérico (caso não tenha, assume 0)
+    todas_fichas.sort(key=lambda f: int(f.get("id", 0)) if str(f.get("id", "")).isdigit() else 0)
 
     enviados = 0
-
-    # 4) Envia embed por embed
     for ficha in todas_fichas:
         try:
             embed = discord.Embed(
-                title=f"📜 Ficha de Jogador #{ficha.get('id', '??')} – Arise Crossover",
+                title=f"📜 Ficha de Jogador #{ficha.get('id', '??')} – Arise Crossover 🇧🇷🌌",
                 color=discord.Color.purple()
             )
 
-            # Campos principais
             embed.add_field(name="🎮 Roblox", value=ficha.get("roblox", "N/A"), inline=True)
             embed.add_field(name="🏰 Guilda", value=ficha.get("guilda", "N/A"), inline=True)
 
-            # Discord
+            # 👤 Discord user
             discord_id = str(ficha.get("discord_id", "")).strip()
             avatar_url = None
             if discord_id.isdigit():
                 try:
-                    user = await bot.fetch_user(int(discord_id))
+                    user = await interaction.client.fetch_user(int(discord_id))
                     avatar_url = user.display_avatar.url
                     embed.add_field(name="💬 Discord", value=f"<@{discord_id}>", inline=False)
                 except discord.NotFound:
@@ -174,30 +156,27 @@ async def enviar_fichas(interaction: discord.Interaction):
             else:
                 embed.add_field(name="💬 Discord", value="❌ ID ausente ou inválido", inline=False)
 
-            # Outros atributos
-            embed.add_field(name="⚔️ DPS",  value=ficha.get("dps",  "N/A"), inline=True)
+            embed.add_field(name="⚔️ DPS", value=ficha.get("dps", "N/A"), inline=True)
             embed.add_field(name="💎 Farm", value=ficha.get("farm", "N/A"), inline=True)
 
             embed.add_field(
                 name="📚 Outras Informações",
                 value=(
-                    f"🔹 Rank: **{ficha.get('rank',  'N/A')}**\n"
-                    f"🔹 Level: **{ficha.get('level', 'N/A')}**\n"
-                    f"🔹 Tempo: **{ficha.get('tempo', 'N/A')}**"
+                    f"🔹 Rank: {ficha.get('rank', 'N/A')}\n"
+                    f"🔹 Level: {ficha.get('level', 'N/A')}\n"
+                    f"🔹 Tempo: {ficha.get('tempo', 'N/A')}"
                 ),
                 inline=False
             )
 
-            embed.set_footer(text=f"Arquivo: {ficha['_origem_arquivo']}")
-
             if avatar_url:
                 embed.set_thumbnail(url=avatar_url)
 
+            embed.set_footer(text=f"Arquivo: {ficha['_origem_arquivo']}")
+
             await interaction.followup.send(embed=embed)
             enviados += 1
-
-            # Pausa rápida para não bater rate-limit se houver muitas fichas
-            await asyncio.sleep(DELAY)
+            await asyncio.sleep(0.5)  # 🕐 Anti-rate-limit
 
         except Exception as e:
             await interaction.followup.send(
@@ -205,10 +184,10 @@ async def enviar_fichas(interaction: discord.Interaction):
                 ephemeral=True
             )
 
-    # 5) Mensagem final de resumo
+    # ✅ Finalização
     await interaction.followup.send(
-        f"✅ **{enviados}** fichas enviadas em ordem numérica."
-        + (f" ({erros_leitura} arquivos não puderam ser lidos)" if erros_leitura else "")
+        f"✅ {enviados} fichas enviadas em ordem numérica."
+        + (f" ({erros_leitura} com erro de leitura)" if erros_leitura else "")
     )
 @bot.tree.command(name="todas_fichas", description="Mostra todas as fichas salvas de todas as guildas e idiomas.")
 async def todas_fichas(interaction: discord.Interaction):
