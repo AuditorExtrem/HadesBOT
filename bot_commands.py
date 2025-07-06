@@ -92,6 +92,49 @@ class ConfirmarExclusaoView(discord.ui.View):
     async def cancelar(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(content="A exclusão da ficha original foi cancelada.", view=None)
 
+@bot.tree.command(name="fichas", description="Mostra todas as fichas salvas em ordem.")
+@app_commands.describe(guilda="Selecione a guilda", idioma="Selecione o idioma")
+@app_commands.choices(
+    guilda=[
+        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="Hades 2", value="hades2")
+    ],
+    idioma=[
+        app_commands.Choice(name="Português", value="pt"),
+        app_commands.Choice(name="Inglês", value="en"),
+        app_commands.Choice(name="Espanhol", value="es")
+    ]
+)
+async def fichas(interaction: discord.Interaction, guilda: app_commands.Choice[str], idioma: app_commands.Choice[str]):
+    arquivo = arquivo_fichas(guilda.value, idioma.value)
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            fichas = json.load(f)
+    except Exception:
+        await interaction.response.send_message("❌ Não foi possível carregar o arquivo de fichas.", ephemeral=True)
+        return
+
+    if not fichas:
+        await interaction.response.send_message("❌ Nenhuma ficha registrada.", ephemeral=True)
+        return
+
+    fichas_ordenadas = sorted(fichas.values(), key=lambda f: f.get("numero", 0))
+    embed = discord.Embed(
+        title=f"📋 Fichas Salvas – {guilda.name} ({idioma.name})",
+        description=f"Total: {len(fichas_ordenadas)} fichas",
+        color=discord.Color.blue()
+    )
+
+    for ficha in fichas_ordenadas:
+        numero = ficha.get("numero", "-")
+        roblox = ficha.get("roblox", "-")
+        discord_id = ficha.get("discord", "-")
+        data = ficha.get("data", "-")
+        linha = f"👤 <@{discord_id}> | 🎮 `{roblox}` | 📅 `{data}`"
+        embed.add_field(name=f"Ficha #{numero}", value=linha, inline=False)
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
 import discord
 import json
 import os
