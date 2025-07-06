@@ -140,12 +140,12 @@ async def todas_fichas(interaction: discord.Interaction):
     import os
 
     arquivos = [
-        "ficha_hades_pt.json",
-        "ficha_hades_en.json",
+        "fichas_hades_pt.json",
+        "fichas_hades_en.json",
         "ficha_hades_es.json",
-        "ficha_hades2_pt.json",
-        "ficha_hades2_en.json",
-        "ficha_hades2_es.json",
+        "fichas_hades2_pt.json",
+        "fichas_hades2_en.json",
+        "fichas_hades2_es.json",
     ]
 
     todas_fichas = []
