@@ -135,41 +135,63 @@ async def fichas(interaction: discord.Interaction, guilda: app_commands.Choice[s
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-import discord
-import json
-import os
+@bot.tree.command(name="todas_fichas", description="Mostra todas as fichas salvas de todas as guildas e idiomas.")
+async def todas_fichas(interaction: discord.Interaction):
+    import os
 
-@bot.tree.command(name="debug_fichas", description="(ADM) Ver fichas salvas da guilda/idioma selecionado")
-@app_commands.choices(
-    guilda=[
-        app_commands.Choice(name="Hades", value="hades"),
-        app_commands.Choice(name="Hades 2", value="hades2"),
-    ],
-    idioma=[
-        app_commands.Choice(name="Português", value="pt"),
-        app_commands.Choice(name="Inglês", value="en"),
-        app_commands.Choice(name="Espanhol", value="es"),
+    arquivos = [
+        "ficha_hades_pt.json",
+        "ficha_hades_en.json",
+        "ficha_hades_es.json",
+        "ficha_hades2_pt.json",
+        "ficha_hades2_en.json",
+        "ficha_hades2_es.json",
     ]
-)
-@app_commands.default_permissions(administrator=True)
-async def debug_fichas(interaction: discord.Interaction, guilda: app_commands.Choice[str], idioma: app_commands.Choice[str]):
-    arquivo = arquivo_fichas(guilda.value, idioma.value)
-    try:
-        with open(arquivo, "r", encoding="utf-8") as f:
-            todas = json.load(f)
-    except Exception as e:
-        await interaction.response.send_message(f"❌ Erro ao carregar: {e}", ephemeral=True)
+
+    todas_fichas = []
+
+    for arquivo in arquivos:
+        if not os.path.exists(arquivo):
+            continue
+        try:
+            with open(arquivo, "r", encoding="utf-8") as f:
+                fichas = json.load(f)
+                todas_fichas.extend(fichas.values())
+        except Exception as e:
+            print(f"Erro ao carregar {arquivo}: {e}")
+
+    if not todas_fichas:
+        await interaction.response.send_message("❌ Nenhuma ficha encontrada.", ephemeral=False)
         return
 
-    if not todas:
-        await interaction.response.send_message("📂 Nenhuma ficha encontrada nesse arquivo.", ephemeral=True)
-        return
+    fichas_ordenadas = sorted(todas_fichas, key=lambda f: f.get("numero", 0))
 
-    preview = ""
-    for uid, ficha in todas.items():
-        preview += f"• {ficha.get('roblox')} #{ficha.get('numero')} (ID: {uid})\n"
-    await interaction.response.send_message(f"📝 Fichas encontradas:\n```{preview}```", ephemeral=True)
+    embed = discord.Embed(
+        title="📋 Todas as Fichas Salvas",
+        description=f"Total: {len(fichas_ordenadas)} fichas",
+        color=discord.Color.dark_green()
+    )
 
+    for ficha in fichas_ordenadas:
+        numero = ficha.get("numero", "-")
+        roblox = ficha.get("roblox", "-")
+        discord_id = ficha.get("discord", "-")
+        data = ficha.get("data", "-")
+        linha = f"👤 <@{discord_id}> | 🎮 `{roblox}` | 📅 `{data}`"
+        embed.add_field(name=f"Ficha #{numero}", value=linha, inline=False)
+
+        # Evita o limite de 25 fields por embed
+        if len(embed.fields) == 25:
+            await interaction.channel.send(embed=embed)
+            embed = discord.Embed(
+                title="📋 Continuação das Fichas",
+                color=discord.Color.dark_green()
+            )
+
+    if embed.fields:
+        await interaction.channel.send(embed=embed)
+
+    await interaction.response.send_message("✅ Fichas enviadas com sucesso.", ephemeral=False)
 @bot.tree.command(name="duplicar_ficha", description="Duplica uma ficha existente para um novo número ou usuário (ADMIN)")
 @app_commands.describe(
     numero_antigo="Número atual da ficha",
