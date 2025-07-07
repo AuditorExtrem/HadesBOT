@@ -648,11 +648,12 @@ async def editar_ficha(interaction: discord.Interaction, guilda: app_commands.Ch
         return
 
     view = ViewSelecaoFicha(todas, guilda.value, idioma.value)
-    view.message = await interaction.response.send_message(
+    await interaction.response.send_message(
         "📋 Selecione qual ficha deseja editar:",
         view=view,
         ephemeral=True
     )
+    view.message = await interaction.original_response()
 @bot.tree.command(name="remover_servidor", description="Remove um servidor salvo pelo nome")
 @app_commands.describe(nome="Nome do servidor")
 async def remover_servidor(interaction: discord.Interaction, nome: str):
