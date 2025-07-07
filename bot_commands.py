@@ -414,6 +414,29 @@ async def ver_ficha(
         embed.set_thumbnail(url=member.avatar.url if member.avatar else member.default_avatar.url)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
+@bot.tree.command(name="definir_numero_ficha", description="Define manualmente o número da última ficha registrada.")
+@app_commands.describe(
+    guilda="Selecione a guilda para ajustar o número",
+    numero="Número da última ficha registrada"
+)
+@app_commands.choices(
+    guilda=[
+        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="Hades 2", value="hades2")
+    ]
+)
+@app_commands.default_permissions(administrator=True)
+async def definir_numero_ficha(interaction: discord.Interaction, guilda: app_commands.Choice[str], numero: int):
+    try:
+        salvar_numero_ficha(guilda.value, numero)  # Função já existe no core.py
+        await interaction.response.send_message(
+            f"✅ O número da última ficha da guilda **{guilda.name}** foi definido como `{numero}`.\n"
+            f"A próxima ficha será **#{numero + 1}**.",
+            ephemeral=True
+        )
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Erro ao salvar o número: {e}", ephemeral=True)
+
 @bot.tree.command(name="minha_ficha", description="Veja rapidamente sua ficha cadastrada em uma guilda/idioma")
 @app_commands.choices(
     guilda=[
