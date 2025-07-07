@@ -611,8 +611,11 @@ async def selecionar_campo(self, interaction: Interaction):
     except Exception as e:
         await interaction.followup.send(f"⏱️ Tempo esgotado. Tente novamente.", ephemeral=True)
 
-from discord import app_commands, Interaction
-from core import arquivo_fichas, ViewSelecaoFicha, ModalEditarFicha
+from discord import app_commands
+from discord.ext import commands
+import discord
+import json
+from core import ViewSelecaoFicha, arquivo_fichas
 
 @bot.tree.command(name="editar_ficha", description="Editar uma ficha via menu interativo")
 @app_commands.describe(
@@ -631,28 +634,23 @@ from core import arquivo_fichas, ViewSelecaoFicha, ModalEditarFicha
     ]
 )
 @app_commands.default_permissions(administrator=True)
-async def editar_ficha(
-    interaction: discord.Interaction,
-    guilda: app_commands.Choice[str],
-    idioma: app_commands.Choice[str]
-):
-    await interaction.response.defer(ephemeral=True)  # ✅ Dá mais tempo ao bot
-
+async def editar_ficha(interaction: discord.Interaction, guilda: app_commands.Choice[str], idioma: app_commands.Choice[str]):
     arquivo = arquivo_fichas(guilda.value, idioma.value)
     try:
         with open(arquivo, "r", encoding="utf-8") as f:
             todas = json.load(f)
-    except Exception:
-        await interaction.followup.send("❌ Erro ao carregar as fichas.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Erro ao carregar as fichas: {e}", ephemeral=True)
         return
 
     if not todas:
-        await interaction.followup.send("⚠️ Nenhuma ficha registrada encontrada.", ephemeral=True)
+        await interaction.response.send_message("⚠️ Nenhuma ficha registrada encontrada.", ephemeral=True)
         return
 
-    await interaction.followup.send(
+    view = ViewSelecaoFicha(todas, guilda.value, idioma.value)
+    view.message = await interaction.response.send_message(
         "📋 Selecione qual ficha deseja editar:",
-        view=ViewSelecaoFicha(todas, guilda.value, idioma.value),
+        view=view,
         ephemeral=True
     )
 @bot.tree.command(name="remover_servidor", description="Remove um servidor salvo pelo nome")
