@@ -631,23 +631,28 @@ from core import arquivo_fichas, ViewSelecaoFicha, ModalEditarFicha
     ]
 )
 @app_commands.default_permissions(administrator=True)
-async def editar_ficha(interaction: Interaction, guilda: app_commands.Choice[str], idioma: app_commands.Choice[str]):
+async def editar_ficha(
+    interaction: discord.Interaction,
+    guilda: app_commands.Choice[str],
+    idioma: app_commands.Choice[str]
+):
+    await interaction.response.defer(ephemeral=True)  # ✅ Dá mais tempo ao bot
+
     arquivo = arquivo_fichas(guilda.value, idioma.value)
     try:
         with open(arquivo, "r", encoding="utf-8") as f:
             todas = json.load(f)
     except Exception:
-        await interaction.response.send_message("❌ Erro ao carregar as fichas.", ephemeral=True)
+        await interaction.followup.send("❌ Erro ao carregar as fichas.", ephemeral=True)
         return
 
     if not todas:
-        await interaction.response.send_message("⚠️ Nenhuma ficha registrada encontrada.", ephemeral=True)
+        await interaction.followup.send("⚠️ Nenhuma ficha registrada encontrada.", ephemeral=True)
         return
 
-    view = ViewSelecaoFicha(todas, guilda.value, idioma.value)
-    await interaction.response.send_message(
+    await interaction.followup.send(
         "📋 Selecione qual ficha deseja editar:",
-        view=view,
+        view=ViewSelecaoFicha(todas, guilda.value, idioma.value),
         ephemeral=True
     )
 @bot.tree.command(name="remover_servidor", description="Remove um servidor salvo pelo nome")
