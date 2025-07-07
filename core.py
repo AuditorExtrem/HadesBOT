@@ -344,6 +344,124 @@ class RefazerFichaView(ui.View):
     async def parar(self, interaction: discord.Interaction):
         await interaction.response.edit_message(content=TEXTOS[self.idioma]['cancelada'], view=None)
 
+import json
+from discord.ui import View, Button, Modal, TextInput
+from discord import Interaction
+
+
+def arquivo_fichas(guilda: str, idioma: str) -> str:
+    # Ajuste o caminho conforme sua organização
+    pasta = "./fichas"
+    return f"{pasta}/fichas_{guilda}_{idioma}.json"
+
+
+class ViewSelecaoFicha(View):
+    def __init__(self, todas_fichas: dict, guilda: str, idioma: str):
+        super().__init__(timeout=180)
+        self.todas_fichas = list(todas_fichas.items())  # lista (chave, ficha)
+        self.guilda = guilda
+        self.idioma = idioma
+        self.pagina_atual = 0
+        self.max_por_pagina = 25
+
+        self.atualizar_botoes()
+
+    def atualizar_botoes(self):
+        self.clear_items()
+
+        inicio = self.pagina_atual * self.max_por_pagina
+        fim = inicio + self.max_por_pagina
+        fichas_pagina = self.todas_fichas[inicio:fim]
+
+        for chave, ficha in fichas_pagina:
+            numero = ficha.get("numero", "??")
+            nome = ficha.get("roblox", "Sem nome")
+            btn = Button(label=f"#{numero} {nome}", style=1)
+            btn.callback = self.botao_callback_factory(chave)
+            self.add_item(btn)
+
+        if self.pagina_atual > 0:
+            btn_ant = Button(label="⬅️ Anterior", style=2)
+            btn_ant.callback = self.anterior_callback
+            self.add_item(btn_ant)
+
+        if fim < len(self.todas_fichas):
+            btn_prox = Button(label="Próximo ➡️", style=2)
+            btn_prox.callback = self.proximo_callback
+            self.add_item(btn_prox)
+
+    def botao_callback_factory(self, ficha_key):
+        async def callback(interaction: Interaction):
+            modal = ModalEditarFicha(self.todas_fichas_dict(), self.guilda, self.idioma, ficha_key)
+            await interaction.response.send_modal(modal)
+        return callback
+
+    def todas_fichas_dict(self):
+        return dict(self.todas_fichas)
+
+    async def anterior_callback(self, interaction: Interaction):
+        if self.pagina_atual > 0:
+            self.pagina_atual -= 1
+            self.atualizar_botoes()
+            await interaction.response.edit_message(view=self)
+
+    async def proximo_callback(self, interaction: Interaction):
+        if (self.pagina_atual + 1) * self.max_por_pagina < len(self.todas_fichas):
+            self.pagina_atual += 1
+            self.atualizar_botoes()
+            await interaction.response.edit_message(view=self)
+
+
+class ModalEditarFicha(Modal):
+    def __init__(self, todas_fichas: dict, guilda: str, idioma: str, ficha_key: str):
+        super().__init__(title="Editar Ficha")
+        self.todas_fichas = todas_fichas
+        self.guilda = guilda
+        self.idioma = idioma
+        self.ficha_key = ficha_key
+
+        ficha = todas_fichas[ficha_key]
+
+        self.text_roblox = TextInput(label="Nome Roblox", default=ficha.get("roblox", ""), max_length=30)
+        self.text_dps = TextInput(label="DPS", default=ficha.get("dps", ""), max_length=20, required=False)
+        self.text_farm = TextInput(label="Farm", default=ficha.get("farm", ""), max_length=20, required=False)
+        self.text_rank = TextInput(label="Rank", default=ficha.get("rank", ""), max_length=20, required=False)
+        self.text_level = TextInput(label="Level", default=str(ficha.get("level", "")), max_length=10, required=False)
+        self.text_tempo = TextInput(label="Tempo", default=ficha.get("tempo", ""), max_length=20, required=False)
+        self.text_data = TextInput(label="Data", default=ficha.get("data", ""), max_length=20, required=False)
+        self.text_discord = TextInput(label="Discord", default=ficha.get("discord", ""), max_length=30, required=False)
+
+        self.add_item(self.text_roblox)
+        self.add_item(self.text_dps)
+        self.add_item(self.text_farm)
+        self.add_item(self.text_rank)
+        self.add_item(self.text_level)
+        self.add_item(self.text_tempo)
+        self.add_item(self.text_data)
+        self.add_item(self.text_discord)
+
+    async def on_submit(self, interaction: Interaction):
+        ficha = self.todas_fichas[self.ficha_key]
+
+        ficha["roblox"] = self.text_roblox.value
+        ficha["dps"] = self.text_dps.value
+        ficha["farm"] = self.text_farm.value
+        ficha["rank"] = self.text_rank.value
+        try:
+            ficha["level"] = int(self.text_level.value)
+        except:
+            ficha["level"] = self.text_level.value
+        ficha["tempo"] = self.text_tempo.value
+        ficha["data"] = self.text_data.value
+        ficha["discord"] = self.text_discord.value
+
+        arquivo = arquivo_fichas(self.guilda, self.idioma)
+        try:
+            with open(arquivo, "w", encoding="utf-8") as f:
+                json.dump(self.todas_fichas, f, ensure_ascii=False, indent=4)
+            await interaction.response.send_message("✅ Ficha atualizada com sucesso!", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(f"❌ Erro ao salvar a ficha: {e}", ephemeral=True)
 # =============== FLUXO DE PREENCHIMENTO DE FICHA ===============
 
 async def fazer_perguntas(interaction, canal, idioma, target_user):
