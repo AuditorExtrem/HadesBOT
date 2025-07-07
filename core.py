@@ -348,27 +348,43 @@ import json
 from discord.ui import View, Button, Modal, TextInput
 from discord import Interaction
 
+def arquivo_fichas(guilda, idioma):
+    return f"fichas_{guilda}_{idioma}.json"
 
-def arquivo_fichas(guilda: str, idioma: str) -> str:
-    # Ajuste o caminho conforme sua organização
-    pasta = "./fichas"
-    return f"{pasta}/fichas_{guilda}_{idioma}.json"
+def carregar_ficha(user_id, guilda, idioma):
+    arquivo = arquivo_fichas(guilda, idioma)
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            ficha = json.load(f).get(str(user_id))
+            return ficha
+    except Exception:
+        return None
 
+def salvar_ficha_por_uid(uid, ficha, guilda, idioma):
+    arquivo = arquivo_fichas(guilda, idioma)
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            todas = json.load(f)
+    except Exception:
+        todas = {}
+    todas[str(uid)] = ficha
+    with open(arquivo, "w", encoding="utf-8") as f:
+        json.dump(todas, f, indent=4, ensure_ascii=False)
 
 class ViewSelecaoFicha(View):
     def __init__(self, todas_fichas: dict, guilda: str, idioma: str):
-        super().__init__(timeout=180)
-        self.todas_fichas = list(todas_fichas.items())  # lista (chave, ficha)
+        super().__init__(timeout=300)
+        self.todas_fichas = list(todas_fichas.items())
         self.guilda = guilda
         self.idioma = idioma
         self.pagina_atual = 0
         self.max_por_pagina = 25
+        self.message = None
 
         self.atualizar_botoes()
 
     def atualizar_botoes(self):
         self.clear_items()
-
         inicio = self.pagina_atual * self.max_por_pagina
         fim = inicio + self.max_por_pagina
         fichas_pagina = self.todas_fichas[inicio:fim]
@@ -411,6 +427,14 @@ class ViewSelecaoFicha(View):
             self.atualizar_botoes()
             await interaction.response.edit_message(view=self)
 
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+        if self.message:
+            try:
+                await self.message.edit(content="⏱️ Tempo esgotado para editar a ficha.", view=self)
+            except:
+                pass
 
 class ModalEditarFicha(Modal):
     def __init__(self, todas_fichas: dict, guilda: str, idioma: str, ficha_key: str):
@@ -442,7 +466,6 @@ class ModalEditarFicha(Modal):
 
     async def on_submit(self, interaction: Interaction):
         ficha = self.todas_fichas[self.ficha_key]
-
         ficha["roblox"] = self.text_roblox.value
         ficha["dps"] = self.text_dps.value
         ficha["farm"] = self.text_farm.value
@@ -455,13 +478,8 @@ class ModalEditarFicha(Modal):
         ficha["data"] = self.text_data.value
         ficha["discord"] = self.text_discord.value
 
-        arquivo = arquivo_fichas(self.guilda, self.idioma)
-        try:
-            with open(arquivo, "w", encoding="utf-8") as f:
-                json.dump(self.todas_fichas, f, ensure_ascii=False, indent=4)
-            await interaction.response.send_message("✅ Ficha atualizada com sucesso!", ephemeral=True)
-        except Exception as e:
-            await interaction.response.send_message(f"❌ Erro ao salvar a ficha: {e}", ephemeral=True)
+        salvar_ficha_por_uid(self.ficha_key, ficha, self.guilda, self.idioma)
+        await interaction.response.send_message("✅ Ficha atualizada com sucesso!", ephemeral=True)
 # =============== FLUXO DE PREENCHIMENTO DE FICHA ===============
 
 async def fazer_perguntas(interaction, canal, idioma, target_user):
