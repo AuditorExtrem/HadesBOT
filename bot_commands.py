@@ -18,13 +18,16 @@ async def ficha(interaction: discord.Interaction, usuario: discord.Member = None
     canal_id = interaction.channel.id
     canal_nome = interaction.channel.name
     canal_mencao = interaction.channel.mention
+
+    numero = proximo_numero_ficha("hades")
+
     if usuario is None or usuario == interaction.user:
         view = MenuIdioma(bot, canal_id, "hades", interaction.user, canal_nome, canal_mencao)
         await interaction.response.send_message(
             f"📄 Clique abaixo para escolher o idioma.\n"
             "Só quem for convidado poderá interagir.\n"
             "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
-            f"Número inicial da ficha: **{carregar_numero_ficha('hades')}**",
+            f"📌 Próximo número de ficha: **#{numero}**",
             view=view,
             ephemeral=True
         )
@@ -33,6 +36,7 @@ async def ficha(interaction: discord.Interaction, usuario: discord.Member = None
         try:
             await usuario.send(
                 f"📄 Você foi convidado a preencher a ficha da guilda **Hades** por {interaction.user.mention}!\n"
+                f"📌 Próximo número da ficha: **#{numero}**\n"
                 "Selecione o idioma abaixo para começar.",
                 view=view
             )
@@ -46,13 +50,16 @@ async def ficha_hades2(interaction: discord.Interaction, usuario: discord.Member
     canal_id = interaction.channel.id
     canal_nome = interaction.channel.name
     canal_mencao = interaction.channel.mention
+
+    numero = proximo_numero_ficha("hades2")
+
     if usuario is None or usuario == interaction.user:
         view = MenuIdioma(bot, canal_id, "hades2", interaction.user, canal_nome, canal_mencao)
         await interaction.response.send_message(
             f"📄 Clique abaixo para escolher o idioma.\n"
             "Só quem for convidado poderá interagir.\n"
             "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
-            f"Número inicial da ficha: **{carregar_numero_ficha('hades2')}**",
+            f"📌 Próximo número de ficha: **#{numero}**",
             view=view,
             ephemeral=True
         )
@@ -61,36 +68,13 @@ async def ficha_hades2(interaction: discord.Interaction, usuario: discord.Member
         try:
             await usuario.send(
                 f"📄 Você foi convidado a preencher a ficha da guilda **Hades 2** por {interaction.user.mention}!\n"
+                f"📌 Próximo número da ficha: **#{numero}**\n"
                 "Selecione o idioma abaixo para começar.",
                 view=view
             )
             await interaction.response.send_message(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
         except Exception:
             await interaction.response.send_message(f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar DMs!", ephemeral=True)
-class ConfirmarExclusaoView(discord.ui.View):
-    def __init__(self, arquivo, user_id_antigo):
-        super().__init__(timeout=60)
-        self.arquivo = arquivo
-        self.user_id_antigo = user_id_antigo
-
-    @discord.ui.button(label="Sim", style=discord.ButtonStyle.danger, emoji="✅")
-    async def confirmar(self, interaction: discord.Interaction, button: discord.ui.Button):
-        try:
-            with open(self.arquivo, "r", encoding="utf-8") as f:
-                todas = json.load(f)
-            if self.user_id_antigo in todas:
-                del todas[self.user_id_antigo]
-                with open(self.arquivo, "w", encoding="utf-8") as f:
-                    json.dump(todas, f, ensure_ascii=False, indent=2)
-                await interaction.response.edit_message(content="🗑️ Ficha original excluída com sucesso.", view=None)
-            else:
-                await interaction.response.edit_message(content="⚠️ A ficha original já foi removida ou não existe.", view=None)
-        except Exception as e:
-            await interaction.response.edit_message(content=f"❌ Erro ao excluir ficha: {e}", view=None)
-
-    @discord.ui.button(label="Não", style=discord.ButtonStyle.secondary, emoji="❌")
-    async def cancelar(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.edit_message(content="A exclusão da ficha original foi cancelada.", view=None)
 
 import json
 import asyncio
