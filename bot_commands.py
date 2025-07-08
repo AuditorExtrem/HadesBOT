@@ -265,16 +265,48 @@ async def enviar_ficha(
 
     for user_id, ficha in fichas.items():
         if ficha.get("numero") == numero:
-            await salvar_ficha_por_uid(user_id, ficha, guilda.value, idioma_valor)
+            # Regrava a ficha só pra garantir atualização
+            salvar_ficha_por_uid(user_id, ficha, guilda.value, idioma_valor)
 
-            # Montar mensagem de confirmação (simples ou embed, você pode melhorar se quiser)
-            descricao = "\n".join([f"**{k.capitalize()}**: {v}" for k, v in ficha.items() if k != "numero"])
+            # Emoji da bandeira
+            idioma_emoji = {
+                "pt": "🇧🇷",
+                "en": "🇺🇸",
+                "es": "🇪🇸"
+            }.get(idioma_valor, "🌐")
 
+            # Criar embed organizado
             embed = discord.Embed(
-                title=f"📨 Ficha #{numero} reenviada com sucesso!",
-                description=descricao,
+                title=f"🌌 Ficha de Jogador #{numero} – Arise Crossover 🌌 {idioma_emoji}",
                 color=discord.Color.blue()
             )
+
+            # Informações principais
+            embed.add_field(name="🎮 Usuário no Roblox", value=ficha.get("usuario", "N/A"), inline=False)
+            embed.add_field(name="🏰 Guilda atual", value=guilda.name, inline=True)
+            embed.add_field(name="💬 Discord", value=ficha.get("discord", "N/A"), inline=True)
+
+            embed.add_field(name="\u200b", value="\u200b", inline=False)
+
+            # Estatísticas principais
+            embed.add_field(name="⚔️ DPS Atual", value=ficha.get("dps", "N/A"), inline=True)
+            embed.add_field(name="💎 Farm de Gemas Diárias", value=ficha.get("gemas", "N/A"), inline=True)
+
+            embed.add_field(name="\u200b", value="\u200b", inline=False)
+
+            # Outras informações
+            embed.add_field(name="🔹 Rank", value=ficha.get("rank", "N/A"), inline=True)
+            embed.add_field(name="🔹 Level", value=ficha.get("level", "N/A"), inline=True)
+            embed.add_field(name="🔹 Tempo de jogo", value=ficha.get("tempo", "N/A"), inline=True)
+
+            embed.add_field(name="\u200b", value="\u200b", inline=False)
+
+            # Data da ficha
+            embed.add_field(name="📆 Data da ficha", value=ficha.get("data", "N/A"), inline=False)
+
+            # Avatar (se tiver)
+            if "avatar_url" in ficha:
+                embed.set_thumbnail(url=ficha["avatar_url"])
 
             await interaction.response.send_message(embed=embed)
             return
