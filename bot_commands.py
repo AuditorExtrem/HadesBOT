@@ -257,63 +257,80 @@ async def enviar_ficha(
     arquivo = arquivo_fichas(guilda.value, idioma_valor)
 
     try:
-        with open(arquivo, "r", encoding="utf-8") as f:
-            fichas = json.load(f)
-    except Exception:
-        await interaction.response.send_message("❌ Erro ao ler o arquivo de fichas.")
+        with open(arquivo, encoding="utf-8") as f:
+            dados = json.load(f)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Erro ao ler o arquivo de fichas: {e}")
         return
 
-    for user_id, ficha in fichas.items():
-        if ficha.get("numero") == numero:
-            # Regrava a ficha só pra garantir atualização
-            salvar_ficha_por_uid(user_id, ficha, guilda.value, idioma_valor)
+    # O JSON parece ser dict de user_id -> ficha
+    ficha_encontrada = None
+    for ficha in dados.values():
+        numero_ficha = get_value(ficha, "numero", "id", default=None)
+        if numero_ficha is not None and int(numero_ficha) == numero:
+            ficha_encontrada = ficha
+            break
 
-            # Emoji da bandeira
-            idioma_emoji = {
-                "pt": "🇧🇷",
-                "en": "🇺🇸",
-                "es": "🇪🇸"
-            }.get(idioma_valor, "🌐")
+    if not ficha_encontrada:
+        await interaction.response.send_message(f"❌ Ficha #{numero} não encontrada na guilda **{guilda.name}**.")
+        return
 
-            # Criar embed organizado
-            embed = discord.Embed(
-                title=f"🌌 Ficha de Jogador #{numero} – Arise Crossover 🌌 {idioma_emoji}",
-                color=discord.Color.blue()
-            )
+    flag = flag_by_lang(idioma_valor)
 
-            # Informações principais
-            embed.add_field(name="🎮 Usuário no Roblox", value=ficha.get("usuario", "N/A"), inline=False)
-            embed.add_field(name="🏰 Guilda atual", value=guilda.name, inline=True)
-            embed.add_field(name="💬 Discord", value=ficha.get("discord", "N/A"), inline=True)
-
-            embed.add_field(name="\u200b", value="\u200b", inline=False)
-
-            # Estatísticas principais
-            embed.add_field(name="⚔️ DPS Atual", value=ficha.get("dps", "N/A"), inline=True)
-            embed.add_field(name="💎 Farm de Gemas Diárias", value=ficha.get("gemas", "N/A"), inline=True)
-
-            embed.add_field(name="\u200b", value="\u200b", inline=False)
-
-            # Outras informações
-            embed.add_field(name="🔹 Rank", value=ficha.get("rank", "N/A"), inline=True)
-            embed.add_field(name="🔹 Level", value=ficha.get("level", "N/A"), inline=True)
-            embed.add_field(name="🔹 Tempo de jogo", value=ficha.get("tempo", "N/A"), inline=True)
-
-            embed.add_field(name="\u200b", value="\u200b", inline=False)
-
-            # Data da ficha
-            embed.add_field(name="📆 Data da ficha", value=ficha.get("data", "N/A"), inline=False)
-
-            # Avatar (se tiver)
-            if "avatar_url" in ficha:
-                embed.set_thumbnail(url=ficha["avatar_url"])
-
-            await interaction.response.send_message(embed=embed)
-            return
-
-    await interaction.response.send_message(
-        f"❌ Ficha #{numero} não encontrada na guilda **{guilda.name}**."
+    discord_id = str(get_value(ficha_encontrada, "discord", "discord_id", default="")).strip()
+    embed = discord.Embed(
+        title=f"🌌 Ficha de Jogador #{numero} – Arise Crossover {flag} 🌌",
+        color=discord.Color.purple()
     )
+
+    embed.add_field(
+        name="🎮 Usuário no Roblox",
+        value=get_value(ficha_encontrada, "roblox"),
+        inline=True,
+    )
+    embed.add_field(
+        name="🏰 Guilda atual",
+        value=guilda.name,
+        inline=True,
+    )
+
+    if discord_id.isdigit():
+        try:
+            user = await interaction.client.fetch_user(int(discord_id))
+            embed.set_thumbnail(url=user.display_avatar.url)
+            embed.add_field(
+                name="💬 Discord",
+                value=f"<@{discord_id}>",
+                inline=False,
+            )
+        except discord.NotFound:
+            embed.add_field(name="💬 Discord", value="ID não encontrado", inline=False)
+    else:
+        embed.add_field(name="💬 Discord", value="ID ausente ou inválido", inline=False)
+
+    embed.add_field(
+        name="⚔️ DPS Atual",
+        value=get_value(ficha_encontrada, "dps"),
+        inline=True,
+    )
+    embed.add_field(
+        name="💎 Farm de Gemas Diárias",
+        value=get_value(ficha_encontrada, "farm"),
+        inline=True,
+    )
+
+    outras = (
+        f"🔹 Rank: {get_value(ficha_encontrada, 'rank')}\n"
+        f"🔹 Level: {get_value(ficha_encontrada, 'level')}\n"
+        f"🔹 Tempo de jogo: {get_value(ficha_encontrada, 'tempo')}"
+    )
+    embed.add_field(name="📊 Outras Informações", value=outras, inline=False)
+
+    data_ficha = get_value(ficha_encontrada, "data", default=None)
+    if data_ficha:
+        embed.add_field(name="📆 Data da ficha", value=data_ficha, inline=False)
+
+    await interaction.response.send_message(embed=embed)
 @bot.tree.command(name="todas_fichas", description="Mostra todas as fichas salvas de todas as guildas e idiomas.")
 async def todas_fichas(interaction: discord.Interaction):
     import os
