@@ -519,8 +519,8 @@ class ModalEditarFicha(Modal):
         ficha["data"] = self.text_data.value
         ficha["discord"] = self.text_discord.value
 
-        salvar_ficha_por_uid(self.ficha_key, ficha, self.guilda, self.idioma)
-        await interaction.response.send_message("✅ Ficha atualizada com sucesso!", ephemeral=True)
+        salvar_ficha_por_uid(self.ficha_key, ficha, self.guilda, self.idioma)  # sem await
+await interaction.response.send_message("✅ Ficha atualizada com sucesso!", ephemeral=True)
 # =============== FLUXO DE PREENCHIMENTO DE FICHA ===============
 
 async def fazer_perguntas(interaction, canal, idioma, target_user):
