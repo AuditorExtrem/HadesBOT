@@ -265,10 +265,18 @@ async def enviar_ficha(
 
     for user_id, ficha in fichas.items():
         if ficha.get("numero") == numero:
-            await salvar_ficha_por_uid(user_id, ficha, guilda.value, idioma_valor, canal=interaction.channel)
-            await interaction.response.send_message(
-                f"📨 Ficha **#{numero}** enviada com sucesso para o canal."
+            await salvar_ficha_por_uid(user_id, ficha, guilda.value, idioma_valor)
+
+            # Montar mensagem de confirmação (simples ou embed, você pode melhorar se quiser)
+            descricao = "\n".join([f"**{k.capitalize()}**: {v}" for k, v in ficha.items() if k != "numero"])
+
+            embed = discord.Embed(
+                title=f"📨 Ficha #{numero} reenviada com sucesso!",
+                description=descricao,
+                color=discord.Color.blue()
             )
+
+            await interaction.response.send_message(embed=embed)
             return
 
     await interaction.response.send_message(
