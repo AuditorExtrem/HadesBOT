@@ -203,6 +203,20 @@ def carregar_numero_ficha(guilda):
     except:
         return NUMERO_FICHA_PADRAO[guilda]
 
+def proximo_numero_ficha(guilda):
+    maior = 0
+    for idioma in ["pt", "en", "es"]:
+        try:
+            with open(f"fichas_{guilda}_{idioma}.json", "r", encoding="utf-8") as f:
+                todas = json.load(f)
+                for ficha in todas.values():
+                    n = ficha.get("numero", 0)
+                    if isinstance(n, int) and n > maior:
+                        maior = n
+        except:
+            continue
+    return maior + 1
+
 def salvar_numero_ficha(guilda, n):
     with open(f"numero_ficha_{guilda}.json", "w", encoding="utf-8") as f:
         json.dump({"numero": n}, f)
