@@ -265,7 +265,7 @@ async def enviar_ficha(
 
     for user_id, ficha in fichas.items():
         if ficha.get("numero") == numero:
-            salvar_ficha_por_uid(user_id, ficha, guilda.value, idioma_valor)
+            await salvar_ficha_por_uid(user_id, ficha, guilda.value, idioma_valor, canal=interaction.channel)
             await interaction.response.send_message(
                 f"📨 Ficha **#{numero}** enviada com sucesso para o canal."
             )
