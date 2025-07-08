@@ -229,6 +229,51 @@ async def enviar_fichas(interaction: discord.Interaction) -> None:
     await interaction.followup.send(resumo)
     await interaction.followup.send(f"{enviados} fichas enviadas." + (f" ({erros} erro(s) de leitura)" if erros else ""))
 
+@bot.tree.command(name="enviar_ficha", description="Envia uma ficha específica pelo número e guilda.")
+@app_commands.describe(
+    numero="Número da ficha",
+    guilda="Selecione a guilda da ficha",
+    idioma="Idioma (padrão: pt)"
+)
+@app_commands.choices(
+    guilda=[
+        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="Hades 2", value="hades2")
+    ],
+    idioma=[
+        app_commands.Choice(name="Português", value="pt"),
+        app_commands.Choice(name="Inglês", value="en"),
+        app_commands.Choice(name="Espanhol", value="es")
+    ]
+)
+@app_commands.default_permissions(administrator=True)
+async def enviar_ficha(
+    interaction: discord.Interaction,
+    numero: int,
+    guilda: app_commands.Choice[str],
+    idioma: app_commands.Choice[str] = None
+):
+    idioma_valor = idioma.value if idioma else "pt"
+    arquivo = arquivo_fichas(guilda.value, idioma_valor)
+
+    try:
+        with open(arquivo, "r", encoding="utf-8") as f:
+            fichas = json.load(f)
+    except Exception:
+        await interaction.response.send_message("❌ Erro ao ler o arquivo de fichas.")
+        return
+
+    for user_id, ficha in fichas.items():
+        if ficha.get("numero") == numero:
+            salvar_ficha_por_uid(user_id, ficha, guilda.value, idioma_valor)
+            await interaction.response.send_message(
+                f"📨 Ficha **#{numero}** enviada com sucesso para o canal."
+            )
+            return
+
+    await interaction.response.send_message(
+        f"❌ Ficha #{numero} não encontrada na guilda **{guilda.name}**."
+    )
 @bot.tree.command(name="todas_fichas", description="Mostra todas as fichas salvas de todas as guildas e idiomas.")
 async def todas_fichas(interaction: discord.Interaction):
     import os
