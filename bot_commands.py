@@ -654,6 +654,43 @@ async def editar_ficha(interaction: discord.Interaction, guilda: app_commands.Ch
         ephemeral=True
     )
     view.message = await interaction.original_response()
+
+@bot.tree.command(name="adicionar_servidor", description="Adiciona um novo servidor à lista de servidores.")
+@app_commands.describe(
+    nome="Nome do servidor (ex: VIP 1)",
+    link="Link do servidor do Roblox",
+    pessoa="Pessoa para exibir como autor (opcional)"
+)
+@app_commands.default_permissions(administrator=True)
+async def adicionar_servidor(
+    interaction: discord.Interaction,
+    nome: str,
+    link: str,
+    pessoa: discord.Member = None
+):
+    servidores = carregar_servidores()
+    nome_lower = nome.strip().lower()
+
+    # ❌ Verifica se já existe um servidor com o mesmo nome
+    if any(s["nome"].strip().lower() == nome_lower for s in servidores):
+        await interaction.response.send_message(
+            f"❌ Já existe um servidor com o nome **{nome}**. Escolha outro nome.",
+            ephemeral=True
+        )
+        return
+
+    novo = {
+        "nome": nome.strip(),
+        "link": link.strip()
+    }
+
+    if pessoa:
+        novo["autor_id"] = pessoa.id
+
+    servidores.append(novo)
+    salvar_servidores(servidores)
+
+    await interaction.response.send_message(f"✅ Servidor **{nome}** adicionado com sucesso!", ephemeral=True)
 @bot.tree.command(name="remover_servidor", description="Remove um servidor salvo pelo nome")
 @app_commands.describe(nome="Nome do servidor")
 async def remover_servidor(interaction: discord.Interaction, nome: str):
