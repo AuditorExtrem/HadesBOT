@@ -173,17 +173,46 @@ def salvar_ficha(user_id, data, guilda, idioma):
     with open(arquivo, "w", encoding="utf-8") as f:
         json.dump(todas, f, indent=4, ensure_ascii=False)
 
-def salvar_ficha_por_uid(uid, ficha, guilda, idioma):
+async def salvar_ficha_com_envio(uid, ficha, guilda, idioma, canal=None):
     arquivo = arquivo_fichas(guilda, idioma)
     try:
         with open(arquivo, "r", encoding="utf-8") as f:
             todas = json.load(f)
     except Exception:
         todas = {}
+
     todas[str(uid)] = ficha
     with open(arquivo, "w", encoding="utf-8") as f:
         json.dump(todas, f, indent=4, ensure_ascii=False)
 
+    if not canal:
+        return
+
+    embed = discord.Embed(
+        title=f"📋 Ficha #{ficha.get('numero', '?')}",
+        description=f"📅 {ficha.get('data', '-')}",
+        color=discord.Color.blue()
+    )
+    embed.add_field(name="🎮 Roblox", value=f"`{ficha.get('roblox', '-')}`", inline=True)
+    embed.add_field(name="🏰 Guilda", value=f"`{ficha.get('guilda', '-')}`", inline=True)
+    embed.add_field(name="💬 Discord", value=f"<@{uid}>", inline=True)
+    embed.add_field(name="⚔️ DPS", value=ficha.get("dps", "-"), inline=True)
+    embed.add_field(name="💎 Farm", value=ficha.get("farm", "-"), inline=True)
+    embed.add_field(name="🔹 Rank", value=ficha.get("rank", "-"), inline=True)
+    embed.add_field(name="🧬 Level", value=str(ficha.get("level", "-")), inline=True)
+    embed.add_field(name="⏱️ Tempo", value=ficha.get("tempo", "-"), inline=True)
+
+    # Adiciona o nome e avatar da pessoa, se estiver no servidor
+    try:
+        guilda_discord = canal.guild
+        membro = guilda_discord.get_member(int(uid))
+        if membro:
+            avatar = membro.avatar.url if membro.avatar else None
+            embed.set_author(name=membro.display_name, icon_url=avatar)
+    except:
+        pass  # Silenciosamente ignora erros se o membro não for encontrado
+
+    await canal.send(embed=embed)
 def remover_ficha_por_uid(uid, guilda, idioma):
     arquivo = arquivo_fichas(guilda, idioma)
     try:
