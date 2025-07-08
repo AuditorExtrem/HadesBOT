@@ -324,8 +324,8 @@ class ConfirmarFichaView(ui.View):
         if ficha_existente:
             numero_ficha = ficha_existente.get("numero")
         else:
-            numero_ficha = carregar_numero_ficha(self.guilda) + 1
-            salvar_numero_ficha(self.guilda, numero_ficha)
+            else:
+                numero_ficha = proximo_numero_ficha(self.guilda)
         self.ficha_data["numero"] = numero_ficha
         salvar_ficha(user_id, self.ficha_data, self.guilda, self.idioma)
         await enviar_ficha_no_canal(interaction.client, self.user, self.idioma, self.ficha_data, self.guilda, self.canal_destino)
