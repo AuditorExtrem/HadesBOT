@@ -324,8 +324,7 @@ class ConfirmarFichaView(ui.View):
         if ficha_existente:
             numero_ficha = ficha_existente.get("numero")
         else:
-            else:
-                numero_ficha = proximo_numero_ficha(self.guilda)
+            numero_ficha = proximo_numero_ficha(self.guilda)
         self.ficha_data["numero"] = numero_ficha
         salvar_ficha(user_id, self.ficha_data, self.guilda, self.idioma)
         await enviar_ficha_no_canal(interaction.client, self.user, self.idioma, self.ficha_data, self.guilda, self.canal_destino)
@@ -337,7 +336,6 @@ class ConfirmarFichaView(ui.View):
             embed=None,
             view=RefazerFichaView(self.bot_refazer, self.canal, self.user, self.guilda, self.idioma)
         )
-
 class RefazerFichaView(ui.View):
     def __init__(self, bot_refazer, canal, user, guilda, idioma):
         super().__init__(timeout=45)
