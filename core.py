@@ -32,12 +32,7 @@ IDIOMAS = {
 TEXTOS = {
     "pt": {
         "perguntas": [
-            ("🎮 Nick no Roblox:", "roblox"),
-            ("⚔️ DPS Atual:", "dps"),
-            ("💎 Farm diário de gemas:", "farm"),
-            ("🔹 Rank:", "rank"),
-            ("🔹 Level:", "level"),
-            ("🔹 Tempo de jogo:", "tempo")
+            ("🎮 Nick no Roblox:", "roblox")
         ],
         "confirmar_envio": "Deseja enviar essa ficha?",
         "refazer_pergunta": "Você quer refazer a ficha?",
@@ -49,21 +44,11 @@ TEXTOS = {
         "preenchida": "✅ Preenchimento da ficha concluído! Aguarde confirmação para enviar...",
         "titulo_embed": "Confira sua ficha antes de enviar!",
         "label_roblox": "Roblox",
-        "label_dps": "DPS",
-        "label_farm": "Farm",
-        "label_rank": "Rank",
-        "label_level": "Level",
-        "label_tempo": "Tempo",
         "label_data": "Data"
     },
     "en": {
         "perguntas": [
-            ("🎮 Roblox username:", "roblox"),
-            ("⚔️ Current DPS:", "dps"),
-            ("💎 Daily gems farm:", "farm"),
-            ("🔹 Rank:", "rank"),
-            ("🔹 Level:", "level"),
-            ("🔹 Playtime:", "tempo")
+            ("🎮 Roblox username:", "roblox")
         ],
         "confirmar_envio": "Do you want to submit this form?",
         "refazer_pergunta": "Do you want to redo the form?",
@@ -75,21 +60,11 @@ TEXTOS = {
         "preenchida": "✅ Form completed! Please confirm to submit...",
         "titulo_embed": "Check your form before submitting!",
         "label_roblox": "Roblox",
-        "label_dps": "DPS",
-        "label_farm": "Farm",
-        "label_rank": "Rank",
-        "label_level": "Level",
-        "label_tempo": "Playtime",
         "label_data": "Date"
     },
     "es": {
         "perguntas": [
-            ("🎮 Usuario de Roblox:", "roblox"),
-            ("⚔️ DPS actual:", "dps"),
-            ("💎 Farmeo diario de gemas:", "farm"),
-            ("🔹 Rango:", "rank"),
-            ("🔹 Nivel:", "level"),
-            ("🔹 Tiempo de juego:", "tempo")
+            ("🎮 Usuario de Roblox:", "roblox")
         ],
         "confirmar_envio": "¿Desea enviar este formulario?",
         "refazer_pergunta": "¿Desea rehacer el formulario?",
@@ -101,11 +76,6 @@ TEXTOS = {
         "preenchida": "✅ ¡Ficha completada! Por favor, confirme para enviar...",
         "titulo_embed": "¡Revisa tu ficha antes de enviar!",
         "label_roblox": "Roblox",
-        "label_dps": "DPS",
-        "label_farm": "Farm",
-        "label_rank": "Rango",
-        "label_level": "Nivel",
-        "label_tempo": "Tiempo de juego",
         "label_data": "Fecha"
     }
 }
