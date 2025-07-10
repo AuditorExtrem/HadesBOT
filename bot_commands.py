@@ -15,6 +15,8 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 @bot.tree.command(name="ficha", description="Preencher ficha de jogador (Hades)")
 @app_commands.describe(usuario="(Opcional) Usuário para responder a ficha")
 async def ficha(interaction: discord.Interaction, usuario: discord.Member = None):
+    await interaction.response.defer(ephemeral=True)  # ← segura a resposta para evitar timeout
+
     canal_id = interaction.channel.id
     canal_nome = interaction.channel.name
     canal_mencao = interaction.channel.mention
@@ -23,7 +25,7 @@ async def ficha(interaction: discord.Interaction, usuario: discord.Member = None
 
     if usuario is None or usuario == interaction.user:
         view = MenuIdioma(bot, canal_id, "hades", interaction.user, canal_nome, canal_mencao)
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"📄 Clique abaixo para escolher o idioma.\n"
             "Só quem for convidado poderá interagir.\n"
             "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
@@ -40,13 +42,15 @@ async def ficha(interaction: discord.Interaction, usuario: discord.Member = None
                 "Selecione o idioma abaixo para começar.",
                 view=view
             )
-            await interaction.response.send_message(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
+            await interaction.followup.send(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
         except Exception:
-            await interaction.response.send_message(f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar DMs!", ephemeral=True)
+            await interaction.followup.send(f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar DMs!", ephemeral=True)
 
 @bot.tree.command(name="ficha_hades2", description="Preencher ficha de jogador (Hades 2)")
 @app_commands.describe(usuario="(Opcional) Usuário para responder a ficha")
 async def ficha_hades2(interaction: discord.Interaction, usuario: discord.Member = None):
+    await interaction.response.defer(ephemeral=True)  # ← evita timeout
+
     canal_id = interaction.channel.id
     canal_nome = interaction.channel.name
     canal_mencao = interaction.channel.mention
@@ -55,7 +59,7 @@ async def ficha_hades2(interaction: discord.Interaction, usuario: discord.Member
 
     if usuario is None or usuario == interaction.user:
         view = MenuIdioma(bot, canal_id, "hades2", interaction.user, canal_nome, canal_mencao)
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"📄 Clique abaixo para escolher o idioma.\n"
             "Só quem for convidado poderá interagir.\n"
             "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
@@ -72,10 +76,9 @@ async def ficha_hades2(interaction: discord.Interaction, usuario: discord.Member
                 "Selecione o idioma abaixo para começar.",
                 view=view
             )
-            await interaction.response.send_message(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
+            await interaction.followup.send(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
         except Exception:
-            await interaction.response.send_message(f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar DMs!", ephemeral=True)
-
+            await interaction.followup.send(f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar DMs!", ephemeral=True)
 import json
 import asyncio
 import discord
