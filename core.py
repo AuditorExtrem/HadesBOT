@@ -536,27 +536,27 @@ async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id)
     embed.add_field(name="💬 Discord", value=mention, inline=False)
     embed.add_field(name="📅 Data", value=data, inline=False)
 
-    # Recuperar o avatar do membro ou usar padrão
-try:
-    member = canal.guild.get_member(int(discord_id))
-    avatar_url = member.avatar.url if member and member.avatar else None
-except:
-    member = None
-    avatar_url = None
-
-# Se falhar, tenta buscar o usuário via API
-if not avatar_url:
+    # ✅ Este bloco TODO precisa estar INDENTADO aqui
     try:
-        fetched_user = await bot.fetch_user(int(discord_id))
-        avatar_url = fetched_user.avatar.url if fetched_user.avatar else fetched_user.default_avatar.url
+        member = canal.guild.get_member(int(discord_id))
+        avatar_url = member.avatar.url if member and member.avatar else None
     except:
-        avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
+        member = None
+        avatar_url = None
 
-# Adiciona o avatar no embed
-if avatar_url:
-    embed.set_thumbnail(url=avatar_url)
+    if not avatar_url:
+        try:
+            fetched_user = await bot.fetch_user(int(discord_id))
+            avatar_url = fetched_user.avatar.url if fetched_user.avatar else fetched_user.default_avatar.url
+        except:
+            avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
+
+    if avatar_url:
+        embed.set_thumbnail(url=avatar_url)
+
     await canal.send(embed=embed)
-async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_destino, canal, bot_refazer):
+   
+    async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_destino, canal, bot_refazer):
     bandeira = IDIOMAS.get(idioma, {}).get("bandeira", "")
     embed = discord.Embed(
         title=f"{TEXTOS[idioma]['titulo_embed']} {bandeira}",
@@ -573,7 +573,7 @@ async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_d
         view=view,
         ephemeral=True
     )
-async def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, target_user):
+ def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, target_user):
     async def refazer(canal, user, guilda, idioma):
         await iniciar_formulario(bot, interaction, idioma, canal, guilda, user)
     respostas = await fazer_perguntas(interaction, canal, idioma, target_user)
