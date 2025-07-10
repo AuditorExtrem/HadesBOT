@@ -412,6 +412,9 @@ def salvar_ficha_por_uid(uid, ficha, guilda, idioma):
     with open(arquivo, "w", encoding="utf-8") as f:
         json.dump(todas, f, indent=4, ensure_ascii=False)
 
+from discord.ui import View, Button
+from discord import Interaction, ButtonStyle
+
 class ViewSelecaoFicha(View):
     def __init__(self, todas_fichas: dict, guilda: str, idioma: str):
         super().__init__(timeout=300)
@@ -433,17 +436,17 @@ class ViewSelecaoFicha(View):
         for chave, ficha in fichas_pagina:
             numero = ficha.get("numero", "??")
             nome = ficha.get("roblox", "Sem nome")
-            btn = Button(label=f"#{numero} {nome}", style=1)
+            btn = Button(label=f"#{numero} {nome}", style=ButtonStyle.primary)
             btn.callback = self.botao_callback_factory(chave)
             self.add_item(btn)
 
         if self.pagina_atual > 0:
-            btn_ant = Button(label="⬅️ Anterior", style=2)
+            btn_ant = Button(label="⬅️ Anterior", style=ButtonStyle.secondary)
             btn_ant.callback = self.anterior_callback
             self.add_item(btn_ant)
 
         if fim < len(self.todas_fichas):
-            btn_prox = Button(label="Próximo ➡️", style=2)
+            btn_prox = Button(label="Próximo ➡️", style=ButtonStyle.secondary)
             btn_prox.callback = self.proximo_callback
             self.add_item(btn_prox)
 
@@ -476,7 +479,6 @@ class ViewSelecaoFicha(View):
                 await self.message.edit(content="⏱️ Tempo esgotado para editar a ficha.", view=self)
             except:
                 pass
-
 class ModalEditarFicha(Modal):
     def __init__(self, todas_fichas: dict, guilda: str, idioma: str, ficha_key: str):
         super().__init__(title="Editar Ficha")
