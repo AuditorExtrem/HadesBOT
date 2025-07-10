@@ -544,11 +544,6 @@ async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_d
         color=discord.Color.blurple()
     )
     embed.add_field(name=f"🎮 {TEXTOS[idioma]['label_roblox']}", value=ficha_data['roblox'], inline=False)
-    embed.add_field(name=f"⚔️ {TEXTOS[idioma]['label_dps']}", value=ficha_data['dps'], inline=True)
-    embed.add_field(name=f"💎 {TEXTOS[idioma]['label_farm']}", value=ficha_data['farm'], inline=True)
-    embed.add_field(name=f"🔹 {TEXTOS[idioma]['label_rank']}", value=ficha_data['rank'], inline=True)
-    embed.add_field(name=f"🔹 {TEXTOS[idioma]['label_level']}", value=ficha_data['level'], inline=True)
-    embed.add_field(name=f"🔹 {TEXTOS[idioma]['label_tempo']}", value=ficha_data['tempo'], inline=True)
     embed.set_footer(text=f"{TEXTOS[idioma]['label_data']}: {ficha_data['data']} | Guilda: {guilda} | Idioma: {idioma}")
     view = ConfirmarFichaView(
         ficha_data, canal_destino, user, guilda, idioma, canal, bot_refazer
