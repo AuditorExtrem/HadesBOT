@@ -6,6 +6,13 @@ from datetime import datetime
 import pytz
 
 # =================== CONSTANTES GLOBAIS ===================
+import random
+
+BOAS_VINDAS = [
+    "Bem-vindo à Hades, guerreiro 🛡️🔥",
+    "Você acaba de entrar na lendária Hades ⚔️",
+    "A jornada na Hades começa agora – mostre sua força! 💥"
+]
 FICHAS_CANAL_ID = 1386798237163323493
 FICHAS_CANAL_HADES2_ID = 1388546663190364241
 CANAL_ARQUIVO_FICHAS_ID = 1386832198405193868
@@ -523,64 +530,43 @@ class ModalEditarFicha(Modal):
 # =============== FLUXO DE PREENCHIMENTO DE FICHA ===============
 
 async def fazer_perguntas(interaction, canal, idioma, target_user):
-    respostas = {}
-    perguntas = TEXTOS[idioma]["perguntas"]
-    for pergunta, chave in perguntas:
-        await canal.send(f"{target_user.mention} {pergunta}")
-        def check(m):
-            return m.author == target_user and m.channel == canal
-        try:
-            msg = await interaction.client.wait_for("message", check=check, timeout=600)
-            respostas[chave] = msg.content.strip()
-        except Exception:
-            await canal.send(f"{target_user.mention} Tempo esgotado para responder a pergunta.")
-            return None
-    return respostas
+    await canal.send(f"{target_user.mention} 🎮 Qual seu nick no Roblox?")
+    
+    def check(m):
+        return m.author == target_user and m.channel == canal
 
+    try:
+        msg = await interaction.client.wait_for("message", check=check, timeout=600)
+        return {"roblox": msg.content.strip()}
+    except Exception:
+        await canal.send(f"{target_user.mention} Tempo esgotado para responder.")
+        return None
 async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id):
-    discord_id = ficha.get("discord", None)
-    member = None
     canal = bot.get_channel(canal_id)
-    if discord_id and str(discord_id).isdigit() and canal and canal.guild:
-        member = canal.guild.get_member(int(discord_id))
-    if member:
-        avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
-        display_name = member.display_name
-        mention = member.mention
-    else:
-        try:
-            fetched_user = await bot.fetch_user(int(discord_id))
-            avatar_url = fetched_user.avatar.url if fetched_user.avatar else fetched_user.default_avatar.url
-            display_name = fetched_user.display_name
-            mention = fetched_user.mention
-        except:
-            avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
-            display_name = user.display_name
-            mention = f"<@{discord_id}>" if discord_id else user.mention
-    nome_guilda_fmt = "Hades" if nome_guilda == "hades" else "Hades 2"
-    bandeira = IDIOMAS.get(ficha.get("idioma"), {}).get("bandeira", "")
-    discord_str = member.mention if member else (f"<@{discord_id}>" if discord_id else user.mention)
+    if not canal:
+        return
+
+    boas_vindas = random.choice(BOAS_VINDAS)
+    roblox = ficha.get("roblox", "-")
+    data = ficha.get("data", "-")
+    numero = ficha.get("numero", "??")
+    discord_id = ficha.get("discord")
+
+    try:
+        mention = f"<@{discord_id}>" if discord_id else user.mention
+    except:
+        mention = user.mention
+
     embed = discord.Embed(
-        title=f"🌌 Ficha de Jogador #{ficha['numero']} – Arise Crossover {bandeira} 🌌",
+        title=f"🌌Ficha de Jogador #{numero} | Arise Crossover",
+        description=boas_vindas,
         color=discord.Color.purple()
     )
-    embed.add_field(name=f"🎮 {TEXTOS[idioma]['label_roblox']}", value=ficha['roblox'], inline=False)
-    embed.add_field(name=f"🏰 Guilda", value=nome_guilda_fmt, inline=True)
-    embed.add_field(name="💬 Discord", value=discord_str, inline=True)
-    embed.add_field(name=f"⚔️ {TEXTOS[idioma]['label_dps']}", value=ficha['dps'], inline=False)
-    embed.add_field(name=f"💎 {TEXTOS[idioma]['label_farm']}", value=ficha['farm'], inline=False)
-    embed.add_field(
-        name="📊 Outras Informações",
-        value=(f"🔹 {TEXTOS[idioma]['label_rank']}: {ficha['rank']}\n"
-               f"🔹 {TEXTOS[idioma]['label_level']}: {ficha['level']}\n"
-               f"🔹 {TEXTOS[idioma]['label_tempo']}: {ficha['tempo']}"),
-        inline=False
-    )
-    embed.set_footer(text=f"{TEXTOS[idioma]['label_data']}: {ficha['data']}")
-    embed.set_thumbnail(url=avatar_url)
-    if canal:
-        await canal.send(embed=embed)
+    embed.add_field(name="🎮 Roblox", value=roblox, inline=False)
+    embed.add_field(name="💬 Discord", value=mention, inline=False)
+    embed.add_field(name="📅 Data", value=data, inline=False)
 
+    await canal.send(embed=embed)
 async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_destino, canal, bot_refazer):
     bandeira = IDIOMAS.get(idioma, {}).get("bandeira", "")
     embed = discord.Embed(
@@ -603,7 +589,6 @@ async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_d
         view=view,
         ephemeral=True
     )
-
 async def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, target_user):
     async def refazer(canal, user, guilda, idioma):
         await iniciar_formulario(bot, interaction, idioma, canal, guilda, user)
@@ -616,11 +601,6 @@ async def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, targe
     ficha = {
         "idioma": idioma,
         "roblox": respostas.get("roblox"),
-        "dps": respostas.get("dps"),
-        "farm": respostas.get("farm"),
-        "rank": respostas.get("rank"),
-        "level": respostas.get("level"),
-        "tempo": respostas.get("tempo"),
         "data": data_atual,
         "guilda": nome_guilda,
         "discord": str(target_user.id)
