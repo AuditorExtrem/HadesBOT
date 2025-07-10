@@ -511,6 +511,7 @@ async def fazer_perguntas(interaction, canal, idioma, target_user):
     except Exception:
         await canal.send(f"{target_user.mention} Tempo esgotado para responder.")
         return None
+
 async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id):
     canal = bot.get_channel(canal_id)
     if not canal:
@@ -536,7 +537,6 @@ async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id)
     embed.add_field(name="💬 Discord", value=mention, inline=False)
     embed.add_field(name="📅 Data", value=data, inline=False)
 
-    # ✅ Este bloco TODO precisa estar INDENTADO aqui
     try:
         member = canal.guild.get_member(int(discord_id))
         avatar_url = member.avatar.url if member and member.avatar else None
@@ -555,8 +555,9 @@ async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id)
         embed.set_thumbnail(url=avatar_url)
 
     await canal.send(embed=embed)
-   
-    async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_destino, canal, bot_refazer):
+
+
+async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_destino, canal, bot_refazer):
     bandeira = IDIOMAS.get(idioma, {}).get("bandeira", "")
     embed = discord.Embed(
         title=f"{TEXTOS[idioma]['titulo_embed']} {bandeira}",
@@ -573,15 +574,20 @@ async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id)
         view=view,
         ephemeral=True
     )
- def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, target_user):
+
+
+async def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, target_user):
     async def refazer(canal, user, guilda, idioma):
         await iniciar_formulario(bot, interaction, idioma, canal, guilda, user)
+
     respostas = await fazer_perguntas(interaction, canal, idioma, target_user)
     if respostas is None:
         return
+
     data_atual = datetime.now().strftime("%d/%m/%Y")
     user_id = target_user.id
     ficha_existente = carregar_ficha(user_id, nome_guilda, idioma)
+
     ficha = {
         "idioma": idioma,
         "roblox": respostas.get("roblox"),
@@ -589,6 +595,8 @@ async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id)
         "guilda": nome_guilda,
         "discord": str(target_user.id)
     }
+
     canal_destino = FICHAS_CANAL_ID if nome_guilda == "hades" else FICHAS_CANAL_HADES2_ID
+
     await interaction.followup.send(TEXTOS[idioma]['preenchida'], ephemeral=True)
     await finalizar_ficha(interaction, target_user, ficha, nome_guilda, idioma, canal_destino, canal, refazer)
