@@ -536,6 +536,25 @@ async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id)
     embed.add_field(name="💬 Discord", value=mention, inline=False)
     embed.add_field(name="📅 Data", value=data, inline=False)
 
+    # Recuperar o avatar do membro ou usar padrão
+try:
+    member = canal.guild.get_member(int(discord_id))
+    avatar_url = member.avatar.url if member and member.avatar else None
+except:
+    member = None
+    avatar_url = None
+
+# Se falhar, tenta buscar o usuário via API
+if not avatar_url:
+    try:
+        fetched_user = await bot.fetch_user(int(discord_id))
+        avatar_url = fetched_user.avatar.url if fetched_user.avatar else fetched_user.default_avatar.url
+    except:
+        avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
+
+# Adiciona o avatar no embed
+if avatar_url:
+    embed.set_thumbnail(url=avatar_url)
     await canal.send(embed=embed)
 async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_destino, canal, bot_refazer):
     bandeira = IDIOMAS.get(idioma, {}).get("bandeira", "")
