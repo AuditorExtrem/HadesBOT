@@ -52,18 +52,28 @@ async def ficha(
             "➡️ Volte ao ticket e envie **seu nick do Roblox** para completar a ficha."
         )
 
+    if usuario:
+    # ✅ Envia DM personalizada para o convidado
     try:
         await destino_user.send(mensagem_dm, view=view)
-        if usuario:
-            await interaction.response.send_message(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
-        else:
-            await interaction.response.send_message(
-                f"📄 Clique abaixo para escolher o idioma.\n"
-                "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
-                f"📌 Próximo número de ficha: **#{numero}**",
-                view=view,
-                ephemeral=True
-            )
+        await interaction.response.send_message(
+            f"✉️ Convite enviado por DM para {usuario.mention}!",
+            ephemeral=True
+        )
+    except discord.Forbidden:
+        await interaction.response.send_message(
+            f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar as DMs!",
+            ephemeral=True
+        )
+else:
+    # ✅ Exibe menu diretamente pro autor da interação
+    await interaction.response.send_message(
+        f"📄 Clique abaixo para escolher o idioma.\n"
+        "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
+        f"📌 Próximo número de ficha: **#{numero}**",
+        view=view,
+        ephemeral=True
+        )
     except discord.Forbidden:
         await interaction.response.send_message(
             f"❌ Não consegui enviar DM para {destino_user.mention}. Peça para liberar as DMs!",
