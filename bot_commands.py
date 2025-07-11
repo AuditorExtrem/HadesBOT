@@ -31,46 +31,46 @@ async def ficha(
     canal_id = interaction.channel.id
     canal_nome = interaction.channel.name
     canal_mencao = interaction.channel.mention
-    nome_guilda = guilda.value  # "hades" ou "hades2"
-    destino_user = usuario or interaction.user
+    nome_guilda = guilda.value
     numero = proximo_numero_ficha(nome_guilda)
 
-    view = MenuIdioma(bot, canal_id, nome_guilda, destino_user, canal_nome, canal_mencao)
-
-    # 📩 Mensagem personalizada por guilda
-    if nome_guilda == "hades":
-        mensagem_dm = (
-            f"🌟 Olá {destino_user.mention}!\n\n"
-            "Você foi convidado para entrar na **guilda Hades – Top Global**! Parabéns!\n\n"
-            "➡️ Volte ao ticket e responda com **seu nick do Roblox** para preencher a ficha."
-        )
-    else:
-        mensagem_dm = (
-            f"📘 Olá {destino_user.mention}!\n\n"
-            "Você foi convidado a entrar na **Hades 2**, nossa guilda secundária e futura top global!\n\n"
-            "➡️ Volte ao ticket e envie **seu nick do Roblox** para completar a ficha."
-        )
-
-    if usuario:
-        # ✅ Envia DM para o convidado
-        try:
-            await destino_user.send(mensagem_dm, view=view)
-            await interaction.response.send_message(
-                f"✉️ Convite enviado por DM para {usuario.mention}!",
-                ephemeral=True
-            )
-        except discord.Forbidden:
-            await interaction.response.send_message(
-                f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar as DMs!",
-                ephemeral=True
-            )
-    else:
-        # ✅ Mostra o botão direto no ticket se for o próprio autor
+    # ✅ Se o autor estiver preenchendo a própria ficha
+    if usuario is None or usuario == interaction.user:
+        view = MenuIdioma(bot, canal_id, nome_guilda, interaction.user, canal_nome, canal_mencao)
         await interaction.response.send_message(
             f"📄 Clique abaixo para escolher o idioma.\n"
             "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
             f"📌 Próximo número de ficha: **#{numero}**",
             view=view,
+            ephemeral=True
+        )
+        return  # ✅ Importante: impede que o restante do código (DM) rode!
+
+    # ✅ Se estiver convidando outra pessoa
+    view = MenuIdioma(bot, canal_id, nome_guilda, usuario, canal_nome, canal_mencao)
+
+    if nome_guilda == "hades":
+        mensagem_dm = (
+            f"🌟 Olá {usuario.mention}!\n\n"
+            "Você foi convidado para entrar na **guilda Hades – Top Global**! Parabéns!\n\n"
+            "➡️ Volte ao ticket e responda com **seu nick do Roblox** para preencher a ficha."
+        )
+    else:
+        mensagem_dm = (
+            f"📘 Olá {usuario.mention}!\n\n"
+            "Você foi convidado a entrar na **Hades 2**, nossa guilda secundária e futura top global!\n\n"
+            "➡️ Volte ao ticket e envie **seu nick do Roblox** para completar a ficha."
+        )
+
+    try:
+        await usuario.send(mensagem_dm, view=view)
+        await interaction.response.send_message(
+            f"✉️ Convite enviado por DM para {usuario.mention}!",
+            ephemeral=True
+        )
+    except discord.Forbidden:
+        await interaction.response.send_message(
+            f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar as DMs!",
             ephemeral=True
         )
 import json
