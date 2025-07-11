@@ -12,73 +12,63 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # =================== COMANDOS DE FICHA ===================
-@bot.tree.command(name="ficha", description="Preencher ficha de jogador (Hades)")
-@app_commands.describe(usuario="(Opcional) Usuário para responder a ficha")
-async def ficha(interaction: discord.Interaction, usuario: discord.Member = None):
-    await interaction.response.defer(ephemeral=True)  # ← segura a resposta para evitar timeout
-
+@bot.tree.command(name="ficha", description="Preencher ficha de jogador para Hades ou Hades 2")
+@app_commands.describe(
+    usuario="(Opcional) Usuário para responder a ficha",
+    guilda="Escolha a guilda que está convidando o jogador"
+)
+@app_commands.choices(
+    guilda=[
+        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="Hades 2", value="hades2")
+    ]
+)
+async def ficha(
+    interaction: discord.Interaction,
+    guilda: app_commands.Choice[str],
+    usuario: discord.Member = None
+):
     canal_id = interaction.channel.id
     canal_nome = interaction.channel.name
     canal_mencao = interaction.channel.mention
+    nome_guilda = guilda.value  # "hades" ou "hades2"
 
-    numero = proximo_numero_ficha("hades")
+    numero = proximo_numero_ficha(nome_guilda)
+    destino_user = usuario or interaction.user
 
-    if usuario is None or usuario == interaction.user:
-        view = MenuIdioma(bot, canal_id, "hades", interaction.user, canal_nome, canal_mencao)
-        await interaction.followup.send(
-            f"📄 Clique abaixo para escolher o idioma.\n"
-            "Só quem for convidado poderá interagir.\n"
-            "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
-            f"📌 Próximo número de ficha: **#{numero}**",
-            view=view,
-            ephemeral=True
+    view = MenuIdioma(bot, canal_id, nome_guilda, destino_user, canal_nome, canal_mencao)
+
+    mensagem_dm = ""
+    if nome_guilda == "hades":
+        mensagem_dm = (
+            f"🌟 Olá {destino_user.mention}!\n"
+            "Você foi convidado para entrar na **guilda Hades – Top Global**! Parabéns!\n\n"
+            "➡️ Volte ao ticket e responda com **seu nick do Roblox** para preencher a ficha."
         )
     else:
-        view = MenuIdioma(bot, canal_id, "hades", usuario, canal_nome, canal_mencao)
-        try:
-            await usuario.send(
-                f"📄 Você foi convidado a preencher a ficha da guilda **Hades** por {interaction.user.mention}!\n"
-                f"📌 Próximo número da ficha: **#{numero}**\n"
-                "Selecione o idioma abaixo para começar.",
-                view=view
+        mensagem_dm = (
+            f"📘 Olá {destino_user.mention}!\n"
+            "Você foi convidado a entrar na **Hades 2**, nossa guilda secundária e futura top global!\n\n"
+            "➡️ Volte ao ticket e envie **seu nick do Roblox** para completar a ficha."
+        )
+
+    try:
+        await destino_user.send(mensagem_dm, view=view)
+        if usuario:
+            await interaction.response.send_message(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
+        else:
+            await interaction.response.send_message(
+                f"📄 Clique abaixo para escolher o idioma.\n"
+                "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
+                f"📌 Próximo número de ficha: **#{numero}**",
+                view=view,
+                ephemeral=True
             )
-            await interaction.followup.send(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
-        except Exception:
-            await interaction.followup.send(f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar DMs!", ephemeral=True)
-
-@bot.tree.command(name="ficha_hades2", description="Preencher ficha de jogador (Hades 2)")
-@app_commands.describe(usuario="(Opcional) Usuário para responder a ficha")
-async def ficha_hades2(interaction: discord.Interaction, usuario: discord.Member = None):
-    await interaction.response.defer(ephemeral=True)  # ← evita timeout
-
-    canal_id = interaction.channel.id
-    canal_nome = interaction.channel.name
-    canal_mencao = interaction.channel.mention
-
-    numero = proximo_numero_ficha("hades2")
-
-    if usuario is None or usuario == interaction.user:
-        view = MenuIdioma(bot, canal_id, "hades2", interaction.user, canal_nome, canal_mencao)
-        await interaction.followup.send(
-            f"📄 Clique abaixo para escolher o idioma.\n"
-            "Só quem for convidado poderá interagir.\n"
-            "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
-            f"📌 Próximo número de ficha: **#{numero}**",
-            view=view,
+    except discord.Forbidden:
+        await interaction.response.send_message(
+            f"❌ Não consegui enviar DM para {destino_user.mention}. Peça para liberar as DMs!",
             ephemeral=True
         )
-    else:
-        view = MenuIdioma(bot, canal_id, "hades2", usuario, canal_nome, canal_mencao)
-        try:
-            await usuario.send(
-                f"📄 Você foi convidado a preencher a ficha da guilda **Hades 2** por {interaction.user.mention}!\n"
-                f"📌 Próximo número da ficha: **#{numero}**\n"
-                "Selecione o idioma abaixo para começar.",
-                view=view
-            )
-            await interaction.followup.send(f"✉️ Convite enviado por DM para {usuario.mention}!", ephemeral=True)
-        except Exception:
-            await interaction.followup.send(f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar DMs!", ephemeral=True)
 import json
 import asyncio
 import discord
