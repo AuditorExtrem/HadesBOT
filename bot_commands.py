@@ -280,11 +280,13 @@ async def enviar_ficha(
     flag = flag_by_lang(idioma_valor)
 
     discord_id = str(get_value(ficha_encontrada, "discord", "discord_id", default="")).strip()
-    embed = discord.Embed(
-        title=f"🌌 Ficha de Jogador #{numero} – Arise Crossover {flag} 🌌",
-        color=discord.Color.purple()
-    )
-
+    boas_vinda = random.choice(BOAS_VINDAS)
+embed = discord.Embed(
+    title=f"🌌 Ficha de Jogador #{numero} – Arise Crossover {flag} 🌌",
+    description=boas_vinda,
+    color=discord.Color.purple()
+   )
+    
     # Exibe apenas roblox, discord e data
     embed.add_field(
         name="🎮 Usuário no Roblox",
