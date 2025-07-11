@@ -14,8 +14,8 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # =================== COMANDOS DE FICHA ===================
 @bot.tree.command(name="ficha", description="Preencher ficha de jogador para Hades ou Hades 2")
 @app_commands.describe(
-    usuario="(Opcional) Usuário para responder a ficha",
-    guilda="Escolha a guilda que está convidando o jogador"
+    usuario="(Opcional) Usuário que irá preencher a ficha",
+    guilda="Guilda que está convidando o jogador"
 )
 @app_commands.choices(
     guilda=[
@@ -32,51 +32,45 @@ async def ficha(
     canal_nome = interaction.channel.name
     canal_mencao = interaction.channel.mention
     nome_guilda = guilda.value  # "hades" ou "hades2"
-
-    numero = proximo_numero_ficha(nome_guilda)
     destino_user = usuario or interaction.user
+    numero = proximo_numero_ficha(nome_guilda)
 
     view = MenuIdioma(bot, canal_id, nome_guilda, destino_user, canal_nome, canal_mencao)
 
-    mensagem_dm = ""
+    # 📩 Mensagem personalizada por guilda
     if nome_guilda == "hades":
         mensagem_dm = (
-            f"🌟 Olá {destino_user.mention}!\n"
+            f"🌟 Olá {destino_user.mention}!\n\n"
             "Você foi convidado para entrar na **guilda Hades – Top Global**! Parabéns!\n\n"
             "➡️ Volte ao ticket e responda com **seu nick do Roblox** para preencher a ficha."
         )
     else:
         mensagem_dm = (
-            f"📘 Olá {destino_user.mention}!\n"
+            f"📘 Olá {destino_user.mention}!\n\n"
             "Você foi convidado a entrar na **Hades 2**, nossa guilda secundária e futura top global!\n\n"
             "➡️ Volte ao ticket e envie **seu nick do Roblox** para completar a ficha."
         )
 
     if usuario:
-    # ✅ Envia DM personalizada para o convidado
-    try:
-        await destino_user.send(mensagem_dm, view=view)
+        # ✅ Envia DM para o convidado
+        try:
+            await destino_user.send(mensagem_dm, view=view)
+            await interaction.response.send_message(
+                f"✉️ Convite enviado por DM para {usuario.mention}!",
+                ephemeral=True
+            )
+        except discord.Forbidden:
+            await interaction.response.send_message(
+                f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar as DMs!",
+                ephemeral=True
+            )
+    else:
+        # ✅ Mostra o botão direto no ticket se for o próprio autor
         await interaction.response.send_message(
-            f"✉️ Convite enviado por DM para {usuario.mention}!",
-            ephemeral=True
-        )
-    except discord.Forbidden:
-        await interaction.response.send_message(
-            f"❌ Não consegui enviar DM para {usuario.mention}. Peça para liberar as DMs!",
-            ephemeral=True
-        )
-else:
-    # ✅ Exibe menu diretamente pro autor da interação
-    await interaction.response.send_message(
-        f"📄 Clique abaixo para escolher o idioma.\n"
-        "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
-        f"📌 Próximo número de ficha: **#{numero}**",
-        view=view,
-        ephemeral=True
-    )
-    except discord.Forbidden:
-        await interaction.response.send_message(
-            f"❌ Não consegui enviar DM para {destino_user.mention}. Peça para liberar as DMs!",
+            f"📄 Clique abaixo para escolher o idioma.\n"
+            "⚠️ Você só pode ter UMA ficha registrada. Preencher de novo irá editar sua ficha!\n"
+            f"📌 Próximo número de ficha: **#{numero}**",
+            view=view,
             ephemeral=True
         )
 import json
