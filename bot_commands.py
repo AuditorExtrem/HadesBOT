@@ -73,7 +73,7 @@ else:
         f"📌 Próximo número de ficha: **#{numero}**",
         view=view,
         ephemeral=True
-        )
+    )
     except discord.Forbidden:
         await interaction.response.send_message(
             f"❌ Não consegui enviar DM para {destino_user.mention}. Peça para liberar as DMs!",
