@@ -278,33 +278,22 @@ async def enviar_ficha(
         return
 
     flag = flag_by_lang(idioma_valor)
-
-    discord_id = str(get_value(ficha_encontrada, "discord", "discord_id", default="")).strip()
     boas_vinda = random.choice(BOAS_VINDAS)
-embed = discord.Embed(
-    title=f"🌌 Ficha de Jogador #{numero} – Arise Crossover {flag} 🌌",
-    description=boas_vinda,
-    color=discord.Color.purple()
-   )
-    
-    # Exibe apenas roblox, discord e data
-    embed.add_field(
-        name="🎮 Usuário no Roblox",
-        value=get_value(ficha_encontrada, "roblox"),
-        inline=True,
-    )
-    embed.add_field(
-        name="💬 Discord",
-        value=f"<@{discord_id}>" if discord_id.isdigit() else "ID inválido",
-        inline=True,
-    )
-    embed.add_field(
-        name="📅 Data da Ficha",
-        value=get_value(ficha_encontrada, "data", default="-"),
-        inline=True,
-    )
+    roblox = ficha_encontrada.get("roblox", "-")
+    data = ficha_encontrada.get("data", "-")
+    discord_id = str(ficha_encontrada.get("discord", "-")).strip()
 
-    # Adiciona o avatar, se possível
+    embed = discord.Embed(
+        title=f"🏰 Hades - Ficha #{numero} | Arise Crossover {flag}",
+        description=f"**{boas_vinda}**",
+        color=discord.Color.purple()
+    )
+    embed.add_field(name="🎮 Nick no Roblox", value=roblox, inline=False)
+    embed.add_field(name="💬 Discord", value=f"<@{discord_id}>" if discord_id.isdigit() else "ID inválido", inline=False)
+    embed.add_field(name="📅 Ficha registrada em:", value=data, inline=False)
+    embed.set_footer(text="Arise Crossover | Sistema de Fichas Hades")
+
+    # Avatar
     if discord_id.isdigit():
         try:
             user = await interaction.client.fetch_user(int(discord_id))
