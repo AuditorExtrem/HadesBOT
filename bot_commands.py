@@ -266,7 +266,6 @@ async def enviar_ficha(
         await interaction.response.send_message(f"❌ Erro ao ler o arquivo de fichas: {e}")
         return
 
-    # O JSON parece ser dict de user_id -> ficha
     ficha_encontrada = None
     for ficha in dados.values():
         numero_ficha = get_value(ficha, "numero", "id", default=None)
@@ -286,52 +285,30 @@ async def enviar_ficha(
         color=discord.Color.purple()
     )
 
+    # Exibe apenas roblox, discord e data
     embed.add_field(
         name="🎮 Usuário no Roblox",
         value=get_value(ficha_encontrada, "roblox"),
         inline=True,
     )
     embed.add_field(
-        name="🏰 Guilda atual",
-        value=guilda.name,
+        name="💬 Discord",
+        value=f"<@{discord_id}>" if discord_id.isdigit() else "ID inválido",
+        inline=True,
+    )
+    embed.add_field(
+        name="📅 Data da Ficha",
+        value=get_value(ficha_encontrada, "data", default="-"),
         inline=True,
     )
 
+    # Adiciona o avatar, se possível
     if discord_id.isdigit():
         try:
             user = await interaction.client.fetch_user(int(discord_id))
             embed.set_thumbnail(url=user.display_avatar.url)
-            embed.add_field(
-                name="💬 Discord",
-                value=f"<@{discord_id}>",
-                inline=False,
-            )
         except discord.NotFound:
-            embed.add_field(name="💬 Discord", value="ID não encontrado", inline=False)
-    else:
-        embed.add_field(name="💬 Discord", value="ID ausente ou inválido", inline=False)
-
-    embed.add_field(
-        name="⚔️ DPS Atual",
-        value=get_value(ficha_encontrada, "dps"),
-        inline=True,
-    )
-    embed.add_field(
-        name="💎 Farm de Gemas Diárias",
-        value=get_value(ficha_encontrada, "farm"),
-        inline=True,
-    )
-
-    outras = (
-        f"🔹 Rank: {get_value(ficha_encontrada, 'rank')}\n"
-        f"🔹 Level: {get_value(ficha_encontrada, 'level')}\n"
-        f"🔹 Tempo de jogo: {get_value(ficha_encontrada, 'tempo')}"
-    )
-    embed.add_field(name="📊 Outras Informações", value=outras, inline=False)
-
-    data_ficha = get_value(ficha_encontrada, "data", default=None)
-    if data_ficha:
-        embed.add_field(name="📆 Data da ficha", value=data_ficha, inline=False)
+            pass
 
     await interaction.response.send_message(embed=embed)
 @bot.tree.command(name="todas_fichas", description="Mostra todas as fichas salvas de todas as guildas e idiomas.")
