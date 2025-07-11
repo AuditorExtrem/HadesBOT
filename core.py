@@ -517,32 +517,31 @@ async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id)
     if not canal:
         return
 
-    boas_vindas = random.choice(BOAS_VINDAS)
+    boas_vinda = random.choice(BOAS_VINDAS)
     roblox = ficha.get("roblox", "-")
     data = ficha.get("data", "-")
     numero = ficha.get("numero", "??")
-    discord_id = ficha.get("discord")
-
-    try:
-        mention = f"<@{discord_id}>" if discord_id else user.mention
-    except:
-        mention = user.mention
+    discord_id = ficha.get("discord", "-")
+    bandeira = IDIOMAS.get(idioma, {}).get("bandeira", "")
+    mention = f"<@{discord_id}>" if discord_id else user.mention
 
     embed = discord.Embed(
-        title=f"🌌Ficha de Jogador #{numero} | Arise Crossover",
-        description=boas_vindas,
+        title=f"🏰 Hades - Ficha #{numero} | Arise Crossover {bandeira}",
+        description=f"**{boas_vinda}**",
         color=discord.Color.purple()
     )
-    embed.add_field(name="🎮 Roblox", value=roblox, inline=False)
+    embed.add_field(name="🎮 Nick no Roblox", value=roblox, inline=False)
     embed.add_field(name="💬 Discord", value=mention, inline=False)
-    embed.add_field(name="📅 Data", value=data, inline=False)
+    embed.add_field(name="📅 Ficha registrada em:", value=data, inline=False)
+    embed.set_footer(text="Arise Crossover | Sistema de Fichas Hades")
 
+    # Avatar
+    avatar_url = None
     try:
         member = canal.guild.get_member(int(discord_id))
         avatar_url = member.avatar.url if member and member.avatar else None
     except:
         member = None
-        avatar_url = None
 
     if not avatar_url:
         try:
@@ -555,7 +554,6 @@ async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id)
         embed.set_thumbnail(url=avatar_url)
 
     await canal.send(embed=embed)
-
 
 async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_destino, canal, bot_refazer):
     bandeira = IDIOMAS.get(idioma, {}).get("bandeira", "")
