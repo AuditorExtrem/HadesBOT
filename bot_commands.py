@@ -309,7 +309,7 @@ async def enviar_ficha(
     # Avatar
     if discord_id.isdigit():
         try:
-            user = await interaction.client.fetch_user(int(discord_id))
+            user = await buscar_usuario(interaction.client, discord_id)
             embed.set_thumbnail(url=user.display_avatar.url)
         except discord.NotFound:
             pass
