@@ -947,11 +947,10 @@ async def aviso_cada_2_dias():
 async def keep_alive_task():
     pass
 
-if __name__ == "__main__":
-  import os
 if not TOKEN:
     print("❌ Token não encontrado! Verifique variável de ambiente.")
     exit()
-  
+
+if __name__ == "__main__": 
     keep_alive()
     bot.run(TOKEN)
