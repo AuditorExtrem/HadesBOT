@@ -545,7 +545,7 @@ async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id)
 
     if not avatar_url:
         try:
-            fetched_user = await bot.fetch_user(int(discord_id))
+            fetched_user = await buscar_usuario(bot, discord_id)
             avatar_url = fetched_user.avatar.url if fetched_user.avatar else fetched_user.default_avatar.url
         except:
             avatar_url = user.avatar.url if user.avatar else user.default_avatar.url
