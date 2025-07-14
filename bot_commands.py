@@ -12,6 +12,25 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # =================== COMANDOS DE FICHA ===================
+import time
+from discord.ext import commands
+
+# 🧠 Cache de usuários
+usuario_cache = {}
+
+async def buscar_usuario(bot, discord_id):
+    agora = time.time()
+
+    if discord_id in usuario_cache:
+        user, timestamp = usuario_cache[discord_id]
+        if agora - timestamp < 60:
+            return user
+
+    user = await bot.fetch_user(int(discord_id))
+    usuario_cache[discord_id] = (user, agora)
+    return user
+
+# 👇 Daqui pra baixo vem seus comandos
 @bot.tree.command(name="ficha", description="Preencher ficha de jogador para Hades ou Hades 2")
 @app_commands.describe(
     usuario="(Opcional) Usuário que irá preencher a ficha",
@@ -176,7 +195,7 @@ async def enviar_fichas(interaction: discord.Interaction) -> None:
             discord_id = str(get_value(ficha, "discord", "discord_id", default="")).strip()
             if discord_id.isdigit():
                 try:
-                    user = await interaction.client.fetch_user(int(discord_id))
+                    user = await buscar_usuario(interaction.client, discord_id)
                     embed.set_thumbnail(url=user.display_avatar.url)
                     embed.add_field(
                         name="💬 Discord",
