@@ -978,7 +978,6 @@ print("🔍 Checando variáveis de ambiente...")
 for key, value in os.environ.items():
     print(f"{key} = {value}")
 
-TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
 # 🔥 NOVO: printa o valor da variável específica
 print(f"TOKEN encontrado: {TOKEN}")
@@ -986,10 +985,6 @@ print(f"TOKEN encontrado: {TOKEN}")
 if not TOKEN:
     print("❌ Token não encontrado! Verifique variável de ambiente DISCORD_BOT_TOKEN.")
     exit()
-
-from keep_alive import keep_alive
-keep_alive()
-bot.run(TOKEN)
 
 if __name__ == "__main__":
     from keep_alive import keep_alive  # importe aqui se estiver usando o sistema de uptime
