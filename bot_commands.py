@@ -5,7 +5,7 @@ from discord import app_commands
 from keep_alive import keep_alive
 from core import *
 
-TOKEN = os.getenv('DISCORD_BOT_TOKEN')
+TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
@@ -30,7 +30,7 @@ async def buscar_usuario(bot, discord_id):
     usuario_cache[discord_id] = (user, agora)
     return user
 
-# 👇 Daqui pra baixo vem seus comandos
+# 👇 Daqui pra baixo vem comandos
 @bot.tree.command(name="ficha", description="Preencher ficha de jogador para Hades ou Hades 2")
 @app_commands.describe(
     usuario="(Opcional) Usuário que irá preencher a ficha",
