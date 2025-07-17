@@ -5,7 +5,7 @@ from discord import app_commands
 from keep_alive import keep_alive
 from core import *
 
-TOKEN = os.getenv('DISCORD_TOKEN')
+TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
