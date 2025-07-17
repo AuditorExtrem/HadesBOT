@@ -4,6 +4,10 @@ from discord.ext import commands, tasks
 from discord import app_commands
 from keep_alive import keep_alive
 from core import *
+from dotenv import load_dotenv
+load_dotenv()
+
+TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 intents = discord.Intents.default()
@@ -967,10 +971,6 @@ async def keep_alive_task():
     pass
 
 import os
-from dotenv import load_dotenv
-
-# Carrega o .env se estiver rodando localmente
-load_dotenv()
 
 if not TOKEN:
     print("❌ Token não encontrado! Verifique variável de ambiente DISCORD_BOT_TOKEN.")
