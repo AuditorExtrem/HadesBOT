@@ -6,7 +6,7 @@ from keep_alive import keep_alive
 from core import *
 from dotenv import load_dotenv
 
-TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
