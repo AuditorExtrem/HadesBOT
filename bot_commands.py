@@ -966,10 +966,17 @@ async def aviso_cada_2_dias():
 async def keep_alive_task():
     pass
 
+import os
+from dotenv import load_dotenv
+
+# Carrega o .env se estiver rodando localmente
+load_dotenv()
+
 if not TOKEN:
-    print("❌ Token não encontrado! Verifique variável de ambiente.")
+    print("❌ Token não encontrado! Verifique variável de ambiente DISCORD_BOT_TOKEN.")
     exit()
 
-if __name__ == "__main__": 
+if __name__ == "__main__":
+    from keep_alive import keep_alive  # importe aqui se estiver usando o sistema de uptime
     keep_alive()
     bot.run(TOKEN)
