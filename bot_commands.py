@@ -186,6 +186,7 @@ async def enviar_ficha(
 
     await interaction.response.send_message(embed=embed)
 @bot.tree.command(name="todas_fichas", description="Mostra todas as fichas salvas de todas as guildas e idiomas.")
+@app_commands.default_permissions(administrator=True)
 async def todas_fichas(interaction: discord.Interaction):
     import os
 
@@ -570,6 +571,7 @@ async def adicionar_servidor(
     await interaction.response.send_message(f"✅ Servidor **{nome}** adicionado com sucesso!", ephemeral=True)
 @bot.tree.command(name="remover_servidor", description="Remove um servidor salvo pelo nome")
 @app_commands.describe(nome="Nome do servidor")
+@app_commands.default_permissions(administrator=True)
 async def remover_servidor(interaction: discord.Interaction, nome: str):
     servidores = carregar_servidores()
     nome_lower = nome.lower()
@@ -582,6 +584,7 @@ async def remover_servidor(interaction: discord.Interaction, nome: str):
 
 @bot.tree.command(name="atualizar_servidor", description="Atualiza a imagem do servidor com o avatar da pessoa mencionada")
 @app_commands.describe(nome="Nome do servidor", membro="Membro para atualizar foto")
+@app_commands.default_permissions(administrator=True)
 async def atualizar_servidor(interaction: discord.Interaction, nome: str, membro: discord.Member):
     servidores = carregar_servidores()
     for servidor in servidores:
@@ -593,6 +596,7 @@ async def atualizar_servidor(interaction: discord.Interaction, nome: str, membro
     await interaction.response.send_message(f"❌ Servidor **{nome}** não encontrado.", ephemeral=True)
 
 @bot.tree.command(name="servidores", description="Lista todos os servidores com botão de entrada")
+@app_commands.default_permissions(administrator=True)
 async def servidores(interaction: discord.Interaction):
     servidores = carregar_servidores()
     if not servidores:
@@ -615,6 +619,7 @@ async def servidores(interaction: discord.Interaction):
     await interaction.response.send_message("Lista de servidores enviada!", ephemeral=True)
 
 @bot.tree.command(name="servidor", description="Mostra somente o servidor especificado")
+@app_commands.default_permissions(administrator=True)
 @app_commands.describe(nome="Nome do servidor")
 async def servidor(interaction: discord.Interaction, nome: str):
     servidores = carregar_servidores()
