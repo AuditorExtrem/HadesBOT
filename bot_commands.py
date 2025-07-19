@@ -687,6 +687,7 @@ async def editar_aviso_2_dias(interaction: discord.Interaction, titulo: str, des
 
 @bot.tree.command(name="pingstaff", description="Envie uma mensagem anônima para o canal atual")
 @app_commands.describe(mensagem="Mensagem que será enviada no canal, sem mostrar quem enviou")
+@app_commands.default_permissions(administrator=True) 
 async def pingstaff(interaction: discord.Interaction, mensagem: str):
     await interaction.channel.send(mensagem)
     await interaction.response.send_message("✅ Mensagem enviada anonimamente no canal!", ephemeral=True)
