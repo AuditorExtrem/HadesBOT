@@ -9,8 +9,8 @@ import pytz
 import random
 
 BOAS_VINDAS = [
-    "Bem-vindo à Hades&Cuscuz, guerreiro 🛡️🔥",
-    "Você acaba de entrar na lendária Hades&Cuscuz ⚔️",
+    "Bem-vindo à aliança H&C. Duas forças, um só propósito. ⚔️🤝",
+    "Unidos sob um mesmo estandarte, damos as boas-vindas à nova era. 🏛️⚔️",
     "A jornada na Hades&Cuscuz começa agora – mostre sua força! 💥"
 ]
 FICHAS_CANAL_ID = 1386798237163323493
