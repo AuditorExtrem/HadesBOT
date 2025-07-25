@@ -39,7 +39,7 @@ async def buscar_usuario(bot, discord_id):
 )
 @app_commands.choices(
     guilda=[
-        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="H&C", value="hades"),
         app_commands.Choice(name="Hades 2", value="hades2")
     ]
 )
@@ -72,7 +72,7 @@ async def ficha(
     if nome_guilda == "hades":
         mensagem_dm = (
             f"🌟 Olá {usuario.mention}!\n\n"
-            "Você foi convidado para entrar na **guilda Hades – Top Global**! Parabéns!\n\n"
+            "Você foi convidado para entrar na **guilda H&C –**! Parabéns!\n\n"
             "➡️ Volte ao ticket e responda com **seu nick do Roblox** para preencher a ficha."
         )
     else:
