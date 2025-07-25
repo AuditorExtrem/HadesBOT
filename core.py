@@ -9,9 +9,9 @@ import pytz
 import random
 
 BOAS_VINDAS = [
-    "Bem-vindo à Hades, guerreiro 🛡️🔥",
-    "Você acaba de entrar na lendária Hades ⚔️",
-    "A jornada na Hades começa agora – mostre sua força! 💥"
+    "Bem-vindo à Hades&Cuscuz, guerreiro 🛡️🔥",
+    "Você acaba de entrar na lendária Hades&Cuscuz ⚔️",
+    "A jornada na Hades&Cuscuz começa agora – mostre sua força! 💥"
 ]
 FICHAS_CANAL_ID = 1386798237163323493
 FICHAS_CANAL_HADES2_ID = 1388546663190364241
@@ -23,7 +23,7 @@ CANAL_AVISOS_ID = 1380022433288949851
 CARGO_ANALISE_ID = 1379508463172063286
 CANAL_2DIAS_ID = 1379585139629228062
 CARGO_2DIAS_ID = 1379508463172063290
-NUMERO_FICHA_PADRAO = {"hades": 77, "hades2": 8}
+NUMERO_FICHA_PADRAO = {"Hades&Cuscuz": 77, "hades2": 8}
 IDIOMAS = {
     "pt": {"nome": "Português", "bandeira": "🇧🇷"},
     "en": {"nome": "English", "bandeira": "🇺🇸"},
@@ -90,7 +90,7 @@ CAMPOS_EDITAVEIS = [
     ("discord", "Discord"),
     ("numero", "Número da ficha")
 ]
-GUILDAS = [("hades", "Hades"), ("hades2", "Hades2")]
+GUILDAS = [("Hades&Cuscuz", "Hades&Cuscuz"), ("hades2", "Hades2")]
 
 # =============== FUNÇÕES AUXILIARES ===============
 
@@ -526,14 +526,14 @@ async def enviar_ficha_no_canal(bot, user, idioma, ficha, nome_guilda, canal_id)
     mention = f"<@{discord_id}>" if discord_id else user.mention
 
     embed = discord.Embed(
-        title=f"🏰 Hades - Ficha #{numero} | Arise Crossover {bandeira}",
+        title=f"🏰 Hades&Cuscuz - Ficha #{numero} | Arise Crossover {bandeira}",
         description=f"**{boas_vinda}**",
         color=discord.Color.purple()
     )
     embed.add_field(name="🎮 Nick no Roblox", value=roblox, inline=False)
     embed.add_field(name="💬 Discord", value=mention, inline=False)
     embed.add_field(name="📅 Ficha registrada em:", value=data, inline=False)
-    embed.set_footer(text="Arise Crossover | Sistema de Fichas Hades")
+    embed.set_footer(text="Arise Crossover | Sistema de Fichas Hades&Cuscuz")
 
     # Avatar
     avatar_url = None
@@ -594,7 +594,7 @@ async def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, targe
         "discord": str(target_user.id)
     }
 
-    canal_destino = FICHAS_CANAL_ID if nome_guilda == "hades" else FICHAS_CANAL_HADES2_ID
+    canal_destino = FICHAS_CANAL_ID if nome_guilda == "Hades&Cuscuz" else FICHAS_CANAL_HADES2_ID
 
     await interaction.followup.send(TEXTOS[idioma]['preenchida'], ephemeral=True)
     await finalizar_ficha(interaction, target_user, ficha, nome_guilda, idioma, canal_destino, canal, refazer)
