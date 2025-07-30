@@ -299,7 +299,7 @@ async def ver_ficha(
 )
 @app_commands.choices(
     guilda=[
-        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="HCFD", value="hades"),
         app_commands.Choice(name="Hades 2", value="hades2")
     ]
 )
@@ -318,7 +318,7 @@ async def definir_numero_ficha(interaction: discord.Interaction, guilda: app_com
 @bot.tree.command(name="minha_ficha", description="Veja rapidamente sua ficha cadastrada em uma guilda/idioma")
 @app_commands.choices(
     guilda=[
-        app_commands.Choice(name="Hades", value="hades"),
+        app_commands.Choice(name="HCFD", value="hades"),
         app_commands.Choice(name="Hades 2", value="hades2"),
     ],
     idioma=[
