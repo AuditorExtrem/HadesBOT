@@ -9,7 +9,7 @@ import pytz
 import random
 
 BOAS_VINDAS = [
-    "Bem-vindo à aliança H&C. Duas forças, um só propósito. ⚔️🤝",
+    "Bem-vindo à aliança HCFD. Duas forças, um só propósito. ⚔️🤝",
     "Unidos sob um mesmo estandarte, damos as boas-vindas à nova era. 🏛️⚔️",
     "A jornada na Hades&Cuscuz começa agora – mostre sua força! 💥"
 ]
