@@ -32,7 +32,7 @@ async def buscar_usuario(bot, discord_id):
     return user
 
 # 👇 Daqui pra baixo vem comandos
-@bot.tree.command(name="ficha", description="Preencher ficha de jogador para Hades ou Hades 2")
+@bot.tree.command(name="ficha", description="Preencher ficha de jogador para HCFD ou Hades 2")
 @app_commands.describe(
     usuario="(Opcional) Usuário que irá preencher a ficha",
     guilda="Guilda que está convidando o jogador"
@@ -69,7 +69,7 @@ async def ficha(
     # ✅ Se estiver convidando outra pessoa
     view = MenuIdioma(bot, canal_id, nome_guilda, usuario, canal_nome, canal_mencao)
 
-    if nome_guilda == "hades":
+    if nome_guilda == "HCFD":
         mensagem_dm = (
             f"🌟 Olá {usuario.mention}!\n\n"
             "Você foi convidado para entrar na **guilda HCFD –**! Parabéns!\n\n"
