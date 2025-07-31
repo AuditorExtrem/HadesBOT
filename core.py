@@ -525,7 +525,6 @@ async def finalizar_ficha(interaction, user, ficha_data, guilda, idioma, canal_d
         ephemeral=True
     )
 
-
 async def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, target_user):
     async def refazer(canal, user, guilda, idioma):
         await iniciar_formulario(bot, interaction, idioma, canal, guilda, user)
@@ -545,6 +544,10 @@ async def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, targe
         "guilda": nome_guilda,
         "discord": str(target_user.id)
     }
+
+    canal_destino = FICHAS_CANAL_ID if nome_guilda == "hades" else FICHAS_CANAL_HADES2_ID
+
+    await finalizar_ficha(interaction, target_user, ficha, nome_guilda, idioma, canal_destino, canal, refazer)
 from discord import app_commands, ui, Interaction, Embed, ButtonStyle
 from discord.ext import commands
 
@@ -645,5 +648,3 @@ class ServidorCommands(app_commands.Group):
                 await interaction.response.send_message(f"✅ Servidor **{nome}** encontrado!", ephemeral=True)
                 return
         await interaction.response.send_message(f"❌ Servidor **{nome}** não foi encontrado.", ephemeral=True)
-        
-    canal_destino = FICHAS_CANAL_ID if nome_guilda == "Hades&Cuscuz" else FICHAS_CANAL_HADES2_ID
