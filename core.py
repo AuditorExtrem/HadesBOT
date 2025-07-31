@@ -17,12 +17,6 @@ FICHAS_CANAL_ID = 1386798237163323493
 FICHAS_CANAL_HADES2_ID = 1388546663190364241
 CANAL_ARQUIVO_FICHAS_ID = 1386832198405193868
 ARQUIVO_SERVIDORES = 'servidores.json'
-ARQUIVO_ENVIOS = 'envios.json'
-AVISOS_CONFIG = 'avisos_config.json'
-CANAL_AVISOS_ID = 1380022433288949851
-CARGO_ANALISE_ID = 1379508463172063286
-CANAL_2DIAS_ID = 1379585139629228062
-CARGO_2DIAS_ID = 1379508463172063290
 NUMERO_FICHA_PADRAO = {"HCFD": 77, "hades2": 8}
 IDIOMAS = {
     "pt": {"nome": "Português", "bandeira": "🇧🇷"},
@@ -236,48 +230,6 @@ def carregar_servidores():
 def salvar_servidores(lista):
     with open(ARQUIVO_SERVIDORES, 'w') as f:
         json.dump(lista, f, indent=4)
-
-def carregar_envios():
-    if not os.path.exists(ARQUIVO_ENVIOS):
-        return {}
-    with open(ARQUIVO_ENVIOS, 'r') as f:
-        return json.load(f)
-
-def salvar_envios(dados):
-    with open(ARQUIVO_ENVIOS, 'w') as f:
-        json.dump(dados, f, indent=4)
-
-def get_data_ultimo_envio(chave):
-    envios = carregar_envios()
-    data_str = envios.get(chave)
-    if data_str:
-        try:
-            dt = datetime.fromisoformat(data_str)
-            if dt.tzinfo is None:
-                brasilia_tz = pytz.timezone('America/Sao_Paulo')
-                dt = brasilia_tz.localize(dt)
-            return dt
-        except Exception:
-            return None
-    return None
-
-def set_data_ultimo_envio(chave):
-    envios = carregar_envios()
-    brasilia_tz = pytz.timezone('America/Sao_Paulo')
-    agora_brasilia = datetime.now(brasilia_tz)
-    envios[chave] = agora_brasilia.isoformat()
-    salvar_envios(envios)
-
-def get_hora_brasilia():
-    brasilia_tz = pytz.timezone('America/Sao_Paulo')
-    return datetime.now(brasilia_tz)
-
-def carregar_aviso(tipo):
-    if not os.path.exists(AVISOS_CONFIG):
-        return {}
-    with open(AVISOS_CONFIG, 'r', encoding='utf-8') as f:
-        config = json.load(f)
-    return config.get(tipo, {})
 
 # =============== CLASSES DE UI ===============
 
