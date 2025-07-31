@@ -648,5 +648,4 @@ class ServidorCommands(app_commands.Group):
         
     canal_destino = FICHAS_CANAL_ID if nome_guilda == "Hades&Cuscuz" else FICHAS_CANAL_HADES2_ID
 
-    await interaction.followup.send(TEXTOS[idioma]['preenchida'], ephemeral=True)
     await finalizar_ficha(interaction, target_user, ficha, nome_guilda, idioma, canal_destino, canal, refazer)
