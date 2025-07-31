@@ -539,7 +539,7 @@ import discord
 
 class ServidorCommands(app_commands.Group):
     def __init__(self):
-        super().__init__(name="servidor", description="Gerencia servidores do Roblox")
+        super().__init__(name="servidorhd", description="Gerencia servidores do Roblox")
 
     @app_commands.command(name="adicionar", description="Adiciona um novo servidor à lista")
     @app_commands.describe(
