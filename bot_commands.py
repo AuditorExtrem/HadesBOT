@@ -705,11 +705,15 @@ async def ajuda(interaction: discord.Interaction):
 @bot.event
 async def on_ready():
     print(f'✅ {bot.user} está online!')
+
+    bot.tree.add_command(ServidorCommands())
+
     try:
         synced = await bot.tree.sync()
         print(f"🔄 Sincronizados {len(synced)} comandos slash")
     except Exception as e:
         print(f"❌ Erro ao sincronizar slash commands: {e}")
+
     keep_alive_task.start()
 
 @tasks.loop(minutes=5)
