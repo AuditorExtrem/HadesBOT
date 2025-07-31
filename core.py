@@ -545,7 +545,107 @@ async def iniciar_formulario(bot, interaction, idioma, canal, nome_guilda, targe
         "guilda": nome_guilda,
         "discord": str(target_user.id)
     }
+from discord import app_commands, ui, Interaction, Embed, ButtonStyle
+from discord.ext import commands
 
+class ServidorCommands(app_commands.Group):
+    def __init__(self):
+        super().__init__(name="servidor", description="Gerencia servidores do Roblox")
+
+    @app_commands.command(name="adicionar", description="Adiciona um novo servidor à lista")
+    @app_commands.describe(
+        nome="Nome do servidor (ex: VIP 1)",
+        link="Link do servidor do Roblox",
+        pessoa="Pessoa para exibir como autor (opcional)"
+    )
+    @app_commands.default_permissions(administrator=True)
+    async def adicionar(self, interaction: Interaction, nome: str, link: str, pessoa: discord.Member = None):
+        servidores = carregar_servidores()
+        nome_lower = nome.strip().lower()
+        if any(s["nome"].strip().lower() == nome_lower for s in servidores):
+            await interaction.response.send_message(f"❌ Já existe um servidor com o nome **{nome}**.", ephemeral=True)
+            return
+        novo = {"nome": nome.strip(), "link": link.strip()}
+        if pessoa:
+            novo["autor_id"] = pessoa.id
+        servidores.append(novo)
+        salvar_servidores(servidores)
+        await interaction.response.send_message(f"✅ Servidor **{nome}** adicionado com sucesso!", ephemeral=True)
+
+    @app_commands.command(name="remover", description="Remove um servidor salvo pelo nome")
+    @app_commands.describe(nome="Nome do servidor")
+    @app_commands.default_permissions(administrator=True)
+    async def remover(self, interaction: Interaction, nome: str):
+        servidores = carregar_servidores()
+        nome_lower = nome.lower()
+        novos = [s for s in servidores if s["nome"].lower() != nome_lower]
+        if len(novos) == len(servidores):
+            await interaction.response.send_message(f"❌ Nenhum servidor chamado **{nome}** encontrado.", ephemeral=True)
+            return
+        salvar_servidores(novos)
+        await interaction.response.send_message(f"🗑️ Servidor **{nome}** removido com sucesso!", ephemeral=True)
+
+    @app_commands.command(name="atualizar", description="Atualiza o autor/foto do servidor")
+    @app_commands.describe(nome="Nome do servidor", membro="Membro para atualizar foto")
+    @app_commands.default_permissions(administrator=True)
+    async def atualizar(self, interaction: Interaction, nome: str, membro: discord.Member):
+        servidores = carregar_servidores()
+        for servidor in servidores:
+            if servidor["nome"].lower() == nome.lower():
+                servidor["autor_id"] = membro.id
+                salvar_servidores(servidores)
+                await interaction.response.send_message(f"✅ Foto do servidor **{nome}** atualizada!", ephemeral=True)
+                return
+        await interaction.response.send_message(f"❌ Servidor **{nome}** não encontrado.", ephemeral=True)
+
+    @app_commands.command(name="listar", description="Lista todos os servidores")
+    @app_commands.default_permissions(administrator=True)
+    async def listar(self, interaction: Interaction):
+        servidores = carregar_servidores()
+        if not servidores:
+            await interaction.response.send_message("❌ Nenhum servidor adicionado.", ephemeral=True)
+            return
+        for servidor in servidores:
+            embed = Embed(
+                title=servidor["nome"],
+                description="Clique no botão abaixo para entrar no servidor do Roblox.",
+                color=discord.Color.green()
+            )
+            autor_id = servidor.get("autor_id")
+            if autor_id:
+                membro = interaction.guild.get_member(autor_id)
+                if membro:
+                    embed.set_author(name=membro.display_name, icon_url=membro.avatar.url if membro.avatar else None)
+            view = ui.View()
+            view.add_item(ui.Button(label="🎮 Jogar agora", url=servidor["link"]))
+            await interaction.channel.send(embed=embed, view=view)
+        await interaction.response.send_message("✅ Lista enviada!", ephemeral=True)
+
+    @app_commands.command(name="mostrar", description="Mostra apenas um servidor")
+    @app_commands.describe(nome="Nome do servidor")
+    @app_commands.default_permissions(administrator=True)
+    async def mostrar(self, interaction: Interaction, nome: str):
+        servidores = carregar_servidores()
+        nome_lower = nome.lower()
+        for servidor in servidores:
+            if servidor["nome"].lower() == nome_lower:
+                embed = Embed(
+                    title=servidor["nome"],
+                    description="Clique no botão abaixo para entrar no servidor do Roblox.",
+                    color=discord.Color.green()
+                )
+                autor_id = servidor.get("autor_id")
+                if autor_id:
+                    membro = interaction.guild.get_member(autor_id)
+                    if membro:
+                        embed.set_author(name=membro.display_name, icon_url=membro.avatar.url if membro.avatar else None)
+                view = ui.View()
+                view.add_item(ui.Button(label="🎮 Jogar agora", url=servidor["link"]))
+                await interaction.channel.send(embed=embed, view=view)
+                await interaction.response.send_message(f"✅ Servidor **{nome}** encontrado!", ephemeral=True)
+                return
+        await interaction.response.send_message(f"❌ Servidor **{nome}** não foi encontrado.", ephemeral=True)
+        
     canal_destino = FICHAS_CANAL_ID if nome_guilda == "Hades&Cuscuz" else FICHAS_CANAL_HADES2_ID
 
     await interaction.followup.send(TEXTOS[idioma]['preenchida'], ephemeral=True)
