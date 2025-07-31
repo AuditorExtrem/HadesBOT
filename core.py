@@ -647,5 +647,3 @@ class ServidorCommands(app_commands.Group):
         await interaction.response.send_message(f"❌ Servidor **{nome}** não foi encontrado.", ephemeral=True)
         
     canal_destino = FICHAS_CANAL_ID if nome_guilda == "Hades&Cuscuz" else FICHAS_CANAL_HADES2_ID
-
-    await finalizar_ficha(interaction, target_user, ficha, nome_guilda, idioma, canal_destino, canal, refazer)
